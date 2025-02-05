@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import { csrf } from "hono/csrf";
 import { db, session } from "./middlewares";
+import authRoutes from "./routes/auth";
 
 const app = new Hono();
 
@@ -10,8 +11,6 @@ app.use(db);
 app.use(session);
 
 // Routes
-app.get("/", (c) => {
-	return c.text("Hello Hono!");
-});
+app.route("/auth", authRoutes);
 
 export default app;

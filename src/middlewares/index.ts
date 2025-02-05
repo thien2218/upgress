@@ -100,7 +100,7 @@ export const valibot =
 
 // Database connection
 export const db: MiddlewareHandler<AppEnv> = async (c, next) => {
-	const client = connect({ url: c.env.DATABASE_URL });
+	const client = connect({ url: c.env.DB_URL });
 	const db = drizzle({ client });
 	c.set("db", db);
 

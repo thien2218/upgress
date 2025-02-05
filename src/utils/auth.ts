@@ -8,7 +8,6 @@ import { sha256 } from "@oslojs/crypto/sha2";
 import { TiDBServerlessDatabase } from "drizzle-orm/tidb-serverless";
 import { sessionsTable, usersTable } from "@/db";
 import { Context } from "hono";
-import { AppEnv } from "@/context";
 import { deleteCookie, setCookie } from "hono/cookie";
 
 const EXPIRY = 1000 * 60 * 60 * 24 * 30; // 30 days
@@ -24,7 +23,7 @@ export const SESSION_COOKIE_NAME = "upgress_session";
 export async function createSession(
 	db: TiDBServerlessDatabase,
 	userId: string
-): Promise<Session> {
+): Promise<{ token: string; session: Session }> {
 	const bytes = new Uint8Array(20);
 	crypto.getRandomValues(bytes);
 	const token = encodeBase32LowerCaseNoPadding(bytes);
@@ -40,7 +39,7 @@ export async function createSession(
 	};
 
 	await db.insert(sessionsTable).values(session);
-	return session;
+	return { token, session };
 }
 
 export async function validateSessionToken(
@@ -95,7 +94,7 @@ export async function invalidateSession(
 }
 
 export function setSessionTokenCookie(
-	c: Context<AppEnv>,
+	c: Context<any>,
 	token: string,
 	expiresAt: Date
 ): void {
@@ -115,7 +114,7 @@ export function setSessionTokenCookie(
 	}
 }
 
-export function deleteSessionTokenCookie(c: Context<AppEnv>): void {
+export function deleteSessionTokenCookie(c: Context<any>): void {
 	if (c.env.ENVIRONMENT === "production") {
 		// When deployed over HTTPS
 		deleteCookie(c, SESSION_COOKIE_NAME, {
