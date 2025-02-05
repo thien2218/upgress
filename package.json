@@ -1,8 +1,11 @@
 {
   "name": "upgress",
   "scripts": {
-    "dev": "wrangler dev",
-    "deploy": "wrangler deploy --minify"
+    "dev": "NODE_ENV=development wrangler dev",
+    "deploy": "wrangler deploy --minify",
+    "db:generate": "npx drizzle generate",
+    "db:migrate": "NODE_ENV=production npx drizzle migrate",
+    "db:migrate:dev": "NODE_ENV=development npx drizzle migrate"
   },
   "dependencies": {
     "@oslojs/crypto": "^1.0.1",
