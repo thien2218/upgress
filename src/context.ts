@@ -9,7 +9,7 @@ export interface AppEnv extends Env {
 	Bindings: {
 		// IMAGES_BUCKET: R2Bucket;
 		// KV_PROFILES: KVNamespace;
-		DATABASE_URL: string;
+		DB_URL: string;
 		ENVIRONMENT: "development" | "production";
 	};
 }
