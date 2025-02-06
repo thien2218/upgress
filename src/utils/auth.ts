@@ -9,6 +9,7 @@ import { sessionsTable, usersTable } from "@/db";
 import { Context } from "hono";
 import { deleteCookie, setCookie } from "hono/cookie";
 import { NodePgDatabase } from "drizzle-orm/node-postgres";
+import { handleDbError } from "./db";
 
 const EXPIRY = 1000 * 60 * 60 * 24 * 30; // 30 days
 const REFRESH_THRESH = EXPIRY / 2;
@@ -38,7 +39,7 @@ export async function createSession(
 		expiresAt: new Date(Date.now() + EXPIRY),
 	};
 
-	await db.insert(sessionsTable).values(session);
+	await db.insert(sessionsTable).values(session).catch(handleDbError);
 	return { token, session };
 }
 
@@ -56,12 +57,14 @@ export async function validateSessionToken(
 				id: usersTable.id,
 				email: usersTable.email,
 				emailVerified: usersTable.emailVerified,
+				onboarded: usersTable.onboarded,
 			},
 			expiresAt: sessionsTable.expiresAt,
 		})
 		.from(sessionsTable)
 		.innerJoin(usersTable, eq(sessionsTable.userId, usersTable.id))
-		.where(eq(sessionsTable.id, sessionId));
+		.where(eq(sessionsTable.id, sessionId))
+		.catch(handleDbError);
 
 	if (result.length === 0) {
 		return { session: null, user: null };
@@ -70,7 +73,10 @@ export async function validateSessionToken(
 	let { user, expiresAt } = result[0];
 
 	if (Date.now() >= expiresAt.getTime()) {
-		await db.delete(sessionsTable).where(eq(sessionsTable.id, sessionId));
+		await db
+			.delete(sessionsTable)
+			.where(eq(sessionsTable.id, sessionId))
+			.catch(handleDbError);
 		return { session: null, user: null };
 	}
 
@@ -79,7 +85,8 @@ export async function validateSessionToken(
 		await db
 			.update(sessionsTable)
 			.set({ expiresAt: expiresAt })
-			.where(eq(sessionsTable.id, sessionId));
+			.where(eq(sessionsTable.id, sessionId))
+			.catch(handleDbError);
 	}
 
 	return { session: { id: sessionId, expiresAt }, user };
@@ -89,7 +96,10 @@ export async function invalidateSession(
 	db: NodePgDatabase,
 	sessionId: string
 ): Promise<void> {
-	await db.delete(sessionsTable).where(eq(sessionsTable.id, sessionId));
+	await db
+		.delete(sessionsTable)
+		.where(eq(sessionsTable.id, sessionId))
+		.catch(handleDbError);
 }
 
 export function setSessionTokenCookie(

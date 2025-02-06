@@ -7,6 +7,7 @@ import {
 	invalidateSession,
 	setSessionTokenCookie,
 } from "@/utils/auth";
+import { handleDbError } from "@/utils/db";
 import { compare, hash } from "bcryptjs";
 import { eq } from "drizzle-orm";
 import { Hono } from "hono";
@@ -21,13 +22,16 @@ authRoutes.post("/signup", unauth, valibot("json", SignupSchema), async (c) => {
 	const userId = nanoid(25);
 	const db = c.get("db");
 
-	await db.insert(usersTable).values({
-		id: userId,
-		email,
-		encryptedPwd,
-		emailVerified: false,
-		onboarded: false,
-	});
+	await db
+		.insert(usersTable)
+		.values({
+			id: userId,
+			email,
+			encryptedPwd,
+			emailVerified: false,
+			onboarded: false,
+		})
+		.catch(handleDbError);
 
 	const { session, token } = await createSession(db, userId);
 	setSessionTokenCookie(c, token, session.expiresAt);
@@ -43,10 +47,11 @@ authRoutes.post("/login", unauth, valibot("json", LoginSchema), async (c) => {
 	const records = await db
 		.select({ id: usersTable.id, encryptedPwd: usersTable.encryptedPwd })
 		.from(usersTable)
-		.where(eq(usersTable.email, email));
+		.where(eq(usersTable.email, email))
+		.catch(handleDbError);
 
 	if (!records.length) {
-		return c.text("Incorrect email/username or password", 400);
+		return c.text("Incorrect email or password", 400);
 	}
 
 	const user = records[0];
@@ -55,7 +60,7 @@ authRoutes.post("/login", unauth, valibot("json", LoginSchema), async (c) => {
 		return c.text("Incorrect login method", 400);
 	}
 	if (!(await compare(password, user.encryptedPwd))) {
-		return c.text("Incorrect email/username or password", 400);
+		return c.text("Incorrect email or password", 400);
 	}
 
 	const { session, token } = await createSession(db, user.id);
@@ -80,7 +85,10 @@ authRoutes.post("/onboard", auth, valibot("json", OnboardSchema), async (c) => {
 	const payload = c.req.valid("json");
 	const db = c.get("db");
 
-	await db.insert(profilesTable).values({ userId: user.id, ...payload });
+	await db
+		.insert(profilesTable)
+		.values({ userId: user.id, ...payload })
+		.catch(handleDbError);
 
 	return c.json("User's profile created successfully", 201);
 });

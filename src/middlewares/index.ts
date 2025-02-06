@@ -14,18 +14,18 @@ import {
 } from "valibot";
 import { Client } from "pg";
 
-// Schema validation
-type Targets = {
-	json: any;
-	query: Record<string, string | string[]>;
-};
-
 export const JSON_RE =
 	/^application\/([a-z-\.]+\+)?json(;\s*[a-zA-Z0-9\-]+\=([^;]+))*$/;
 export const MULTIPART_RE =
 	/^multipart\/form-data(;\s?boundary=[a-zA-Z0-9'"()+_,\-./:=?]+)?$/;
 export const URLENCODED_RE =
 	/^application\/x-www-form-urlencoded(;\s*[a-zA-Z0-9\-]+\=([^;]+))*$/;
+
+// Schema validation
+type Targets = {
+	json: any;
+	query: Record<string, string | string[]>;
+};
 
 export const valibot =
 	<

@@ -1,6 +1,7 @@
 import { AppEnv } from "@/context";
 import { profilesTable } from "@/db";
 import { auth } from "@/middlewares";
+import { handleDbError } from "@/utils/db";
 import { eq } from "drizzle-orm";
 import { Hono } from "hono";
 
@@ -18,7 +19,8 @@ profileRoutes.get("/me", auth, async (c) => {
 			bio: profilesTable.bio,
 		})
 		.from(profilesTable)
-		.where(eq(profilesTable.userId, user.id));
+		.where(eq(profilesTable.userId, user.id))
+		.catch(handleDbError);
 
 	if (!records.length) {
 		return c.text("User has not completed their onboarding process", 403);

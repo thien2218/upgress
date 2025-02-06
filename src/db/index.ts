@@ -17,7 +17,7 @@ export const usersTable = pgTable("users", {
 export const profilesTable = pgTable("profiles", {
 	userId: varchar("user_id", { length: 25 })
 		.primaryKey()
-		.references(() => usersTable.id),
+		.references(() => usersTable.id, { onDelete: "cascade" }),
 	firstName: varchar("first_name", { length: 50 }).notNull(),
 	lastName: varchar("last_name", { length: 50 }).notNull(),
 	profileImage: text("profile_image"),
@@ -26,7 +26,9 @@ export const profilesTable = pgTable("profiles", {
 
 export const sessionsTable = pgTable("sessions", {
 	id: varchar("id", { length: 255 }).primaryKey(),
-	userId: varchar("user_id", { length: 25 }).references(() => usersTable.id),
+	userId: varchar("user_id", { length: 25 }).references(() => usersTable.id, {
+		onDelete: "set null",
+	}),
 	expiresAt: timestamp("expires_at", {
 		withTimezone: true,
 		mode: "date",
