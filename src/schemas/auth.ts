@@ -6,11 +6,14 @@ import {
 	maxLength,
 	minLength,
 	object,
+	optional,
 	pipe,
+	startsWith,
 	string,
 	toLowerCase,
 	transform,
 	union,
+	url,
 } from "valibot";
 
 const EmailSchema = pipe(
@@ -53,5 +56,27 @@ export const SignupSchema = pipe(
 	transform(({ confirmPassword, ...rest }) => rest)
 );
 
+export const OnboardSchema = object({
+	firstName: pipe(
+		string(),
+		minLength(2, "First name must be at least 2 characters long"),
+		maxLength(50, "First name must be at most 50 characters long")
+	),
+	lastName: pipe(
+		string(),
+		minLength(2, "Last name must be at least 2 characters long"),
+		maxLength(50, "Last name must be at most 50 characters long")
+	),
+	profileImage: optional(
+		pipe(
+			string(),
+			url("Profile image source must be a valid URL"),
+			startsWith("https://", "Profile image source must be secure")
+		)
+	),
+	bio: optional(string()),
+});
+
 export type LoginPayload = InferInput<typeof LoginSchema>;
 export type SignupPayload = InferInput<typeof SignupSchema>;
+export type OnboardPayload = InferInput<typeof OnboardSchema>;

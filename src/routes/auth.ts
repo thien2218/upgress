@@ -1,7 +1,7 @@
 import { AppEnv } from "@/context";
-import { usersTable } from "@/db";
+import { profilesTable, usersTable } from "@/db";
 import { auth, unauth, valibot } from "@/middlewares";
-import { LoginSchema, SignupSchema } from "@/schemas/auth";
+import { LoginSchema, OnboardSchema, SignupSchema } from "@/schemas/auth";
 import {
 	createSession,
 	invalidateSession,
@@ -26,6 +26,7 @@ authRoutes.post("/signup", unauth, valibot("json", SignupSchema), async (c) => {
 		email,
 		encryptedPwd,
 		emailVerified: false,
+		onboarded: false,
 	});
 
 	const { session, token } = await createSession(db, userId);
@@ -66,25 +67,22 @@ authRoutes.post("/login", unauth, valibot("json", LoginSchema), async (c) => {
 // Logout a user
 authRoutes.post("/logout", auth, async (c) => {
 	const session = c.get("session");
-	// Session invalidation only removes the session from the database
-	// so no need to await it since it can be done in the background
+	// Session invalidation removes the session from the database
+	// No need to await it since it can be done in the background
 	// or later by a cron job
 	invalidateSession(c.get("db"), session.id);
 	return c.text("User successfully logged out");
 });
 
 // Get the current user's basic info
-authRoutes.get("/me", auth, async (c) => {
+authRoutes.post("/onboard", auth, valibot("json", OnboardSchema), async (c) => {
 	const user = c.get("user");
+	const payload = c.req.valid("json");
+	const db = c.get("db");
 
-	return c.json(
-		{
-			state: "success",
-			message: "User info fetched successfully",
-			output: user,
-		},
-		200
-	);
+	await db.insert(profilesTable).values({ userId: user.id, ...payload });
+
+	return c.json("User's profile created successfully", 201);
 });
 
 export default authRoutes;

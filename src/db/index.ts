@@ -11,6 +11,17 @@ export const usersTable = pgTable("users", {
 	email: text("email").unique().notNull(),
 	encryptedPwd: varchar("encrypted_pwd", { length: 30 }),
 	emailVerified: boolean("email_verified").notNull(),
+	onboarded: boolean("email_verified").notNull(),
+});
+
+export const profilesTable = pgTable("profiles", {
+	userId: varchar("user_id", { length: 25 })
+		.primaryKey()
+		.references(() => usersTable.id),
+	firstName: varchar("first_name", { length: 50 }).notNull(),
+	lastName: varchar("last_name", { length: 50 }).notNull(),
+	profileImage: text("profile_image"),
+	bio: text("bio"),
 });
 
 export const sessionsTable = pgTable("sessions", {

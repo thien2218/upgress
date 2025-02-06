@@ -134,9 +134,9 @@ interface AuthEnv extends AppEnv {
 }
 
 export const auth: MiddlewareHandler<AuthEnv> = async (c, next) => {
-	const session = c.get("session");
+	const user = c.get("user");
 
-	if (!session) {
+	if (!user || !user.onboarded) {
 		return c.text("User is not logged in", 401);
 	}
 
@@ -149,9 +149,9 @@ interface UnauthEnv extends AppEnv {
 }
 
 export const unauth: MiddlewareHandler<UnauthEnv> = async (c, next) => {
-	const session = c.get("session");
+	const user = c.get("user");
 
-	if (session) {
+	if (user) {
 		return c.text("User is already logged in", 400);
 	}
 
