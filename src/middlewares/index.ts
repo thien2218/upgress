@@ -2,7 +2,6 @@ import { AppEnv } from "@/context";
 import { getXataClient } from "@/db/xata";
 import { Auth, Unauth } from "@/types";
 import { SESSION_COOKIE_NAME, validateSessionToken } from "@/utils/auth";
-import { drizzle } from "drizzle-orm/node-postgres";
 import { Input, MiddlewareHandler } from "hono";
 import { getCookie } from "hono/cookie";
 import { HTTPException } from "hono/http-exception";
@@ -12,7 +11,7 @@ import {
 	InferOutput,
 	safeParseAsync,
 } from "valibot";
-import { Client } from "pg";
+import { drizzle } from "drizzle-orm/xata-http";
 
 export const JSON_RE =
 	/^application\/([a-z-\.]+\+)?json(;\s*[a-zA-Z0-9\-]+\=([^;]+))*$/;
@@ -45,20 +44,12 @@ export const valibot =
 				if (!contentType) break;
 
 				if (JSON_RE.test(contentType)) {
-					value = await c.req.json().catch(() => {
-						throw new HTTPException(400, {
-							res: new Response("Malformed JSON in request body"),
-						});
-					});
+					value = await c.req.json();
 				} else if (
 					MULTIPART_RE.test(contentType) ||
 					URLENCODED_RE.test(contentType)
 				) {
-					value = await c.req.parseBody().catch(() => {
-						throw new HTTPException(400, {
-							res: new Response("Malformed form data in request body"),
-						});
-					});
+					value = await c.req.parseBody();
 				}
 
 				break;
@@ -101,11 +92,12 @@ export const valibot =
 
 // Database connection
 export const db: MiddlewareHandler<AppEnv> = async (c, next) => {
-	const xata = getXataClient();
-	const client = new Client({ connectionString: xata.sql.connectionString });
-	await client.connect();
+	const xata = getXataClient({
+		apiKey: c.env.XATA_API_KEY,
+		branch: c.env.XATA_BRANCH,
+	});
 
-	const db = drizzle({ client });
+	const db = drizzle(xata);
 	c.set("db", db);
 
 	return next();
@@ -118,7 +110,7 @@ export const session: MiddlewareHandler<AppEnv> = async (c, next) => {
 	if (!token) {
 		c.set("user", null);
 		c.set("session", null);
-		return;
+		return next();
 	}
 
 	const { user, session } = await validateSessionToken(c.get("db"), token);
@@ -138,6 +130,18 @@ export const auth: MiddlewareHandler<AuthEnv> = async (c, next) => {
 
 	if (!user || !user.onboarded) {
 		return c.text("User is not logged in", 401);
+	}
+
+	return next();
+};
+
+export const onboard: MiddlewareHandler<AuthEnv> = async (c, next) => {
+	const user = c.get("user");
+
+	if (!user) {
+		return c.text("User is not logged in", 401);
+	} else if (user.onboarded) {
+		return c.text("User has already onboarded", 400);
 	}
 
 	return next();

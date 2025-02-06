@@ -1,9 +1,10 @@
 import { AppEnv } from "@/context";
 import { profilesTable, usersTable } from "@/db";
-import { auth, unauth, valibot } from "@/middlewares";
+import { auth, onboard, unauth, valibot } from "@/middlewares";
 import { LoginSchema, OnboardSchema, SignupSchema } from "@/schemas/auth";
 import {
 	createSession,
+	deleteSessionTokenCookie,
 	invalidateSession,
 	setSessionTokenCookie,
 } from "@/utils/auth";
@@ -15,10 +16,9 @@ import { nanoid } from "nanoid";
 
 const authRoutes = new Hono<AppEnv>();
 
-// Signup a new user
 authRoutes.post("/signup", unauth, valibot("json", SignupSchema), async (c) => {
 	const { password, email } = c.req.valid("json");
-	const encryptedPwd = await hash(password, 11);
+	const encryptedPwd = await hash(password, 12);
 	const userId = nanoid(25);
 	const db = c.get("db");
 
@@ -39,7 +39,6 @@ authRoutes.post("/signup", unauth, valibot("json", SignupSchema), async (c) => {
 	return c.text("User signed up successfully", 201);
 });
 
-// Login a user
 authRoutes.post("/login", unauth, valibot("json", LoginSchema), async (c) => {
 	const { email, password } = c.req.valid("json");
 	const db = c.get("db");
@@ -69,28 +68,34 @@ authRoutes.post("/login", unauth, valibot("json", LoginSchema), async (c) => {
 	return c.text("User logged in successfully");
 });
 
-// Logout a user
 authRoutes.post("/logout", auth, async (c) => {
 	const session = c.get("session");
 	// Session invalidation removes the session from the database
 	// No need to await it since it can be done in the background
 	// or later by a cron job
 	invalidateSession(c.get("db"), session.id);
+	deleteSessionTokenCookie(c);
 	return c.text("User successfully logged out");
 });
 
-// Get the current user's basic info
-authRoutes.post("/onboard", auth, valibot("json", OnboardSchema), async (c) => {
-	const user = c.get("user");
-	const payload = c.req.valid("json");
-	const db = c.get("db");
+authRoutes.post(
+	"/onboard",
+	onboard,
+	valibot("json", OnboardSchema),
+	async (c) => {
+		const user = c.get("user");
+		const payload = c.req.valid("json");
+		const db = c.get("db");
 
-	await db
-		.insert(profilesTable)
-		.values({ userId: user.id, ...payload })
-		.catch(handleDbError);
+		await db
+			.insert(profilesTable)
+			.values({ userId: user.id, ...payload })
+			.catch(handleDbError);
 
-	return c.json("User's profile created successfully", 201);
-});
+		await db.update(usersTable).set({ onboarded: true }).catch(handleDbError);
+
+		return c.text("User's profile created successfully", 201);
+	}
+);
 
 export default authRoutes;

@@ -9,9 +9,9 @@ import {
 export const usersTable = pgTable("users", {
 	id: varchar("id", { length: 25 }).primaryKey(),
 	email: text("email").unique().notNull(),
-	encryptedPwd: varchar("encrypted_pwd", { length: 30 }),
+	encryptedPwd: varchar("encrypted_pwd", { length: 60 }),
 	emailVerified: boolean("email_verified").notNull(),
-	onboarded: boolean("email_verified").notNull(),
+	onboarded: boolean("onboarded").notNull(),
 });
 
 export const profilesTable = pgTable("profiles", {
@@ -25,7 +25,7 @@ export const profilesTable = pgTable("profiles", {
 });
 
 export const sessionsTable = pgTable("sessions", {
-	id: varchar("id", { length: 255 }).primaryKey(),
+	id: varchar("id", { length: 64 }).primaryKey(),
 	userId: varchar("user_id", { length: 25 }).references(() => usersTable.id, {
 		onDelete: "set null",
 	}),
