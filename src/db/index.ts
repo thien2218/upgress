@@ -82,6 +82,12 @@ export const milestonesTable = pgTable("milestones", {
 	description: text("description"),
 });
 
+export const statusEnum = pgEnum("status_enum", [
+	"pending",
+	"in-progress",
+	"completed",
+]);
+
 export const tasksTable = pgTable("tasks", {
 	id: varchar("id", { length: 25 }).primaryKey(),
 	milestoneId: varchar("milestone_id", { length: 25 })
@@ -89,9 +95,7 @@ export const tasksTable = pgTable("tasks", {
 		.references(() => milestonesTable.id, { onDelete: "cascade" }),
 	description: text("description").notNull(),
 	priority: smallint("priority").notNull(),
-	status: pgEnum("status", ["pending", "in-progress", "completed"])()
-		.default("pending")
-		.notNull(),
+	status: statusEnum().default("pending").notNull(),
 	difficulty: smallint("difficulty").notNull(),
 	dueDate: date("due_date"),
 });

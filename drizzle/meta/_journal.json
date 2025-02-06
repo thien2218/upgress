@@ -43,6 +43,13 @@
       "when": 1738835465078,
       "tag": "0005_goofy_silver_fox",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1738866723547,
+      "tag": "0006_yellow_riptide",
+      "breakpoints": true
     }
   ]
 }
