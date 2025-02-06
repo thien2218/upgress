@@ -135,18 +135,6 @@ export const auth: MiddlewareHandler<AuthEnv> = async (c, next) => {
 	return next();
 };
 
-export const onboard: MiddlewareHandler<AuthEnv> = async (c, next) => {
-	const user = c.get("user");
-
-	if (!user) {
-		return c.text("User is not logged in", 401);
-	} else if (user.onboarded) {
-		return c.text("User has already onboarded", 400);
-	}
-
-	return next();
-};
-
 // Marks routes to only allow unauthenticated users
 interface UnauthEnv extends AppEnv {
 	Variables: Unauth & AppEnv["Variables"];

@@ -22,7 +22,7 @@ const EmailSchema = pipe(
 	maxLength(60, "Email is too long"),
 	toLowerCase(),
 	check(
-		(e) => !e.includes("+"),
+		(email) => !email.includes("+"),
 		"We don't support email address that contains character '+'"
 	)
 );

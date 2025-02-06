@@ -1,6 +1,6 @@
 import { AppEnv } from "@/context";
 import { profilesTable, usersTable } from "@/db";
-import { auth, onboard, unauth, valibot } from "@/middlewares";
+import { auth, unauth, valibot } from "@/middlewares";
 import { LoginSchema, OnboardSchema, SignupSchema } from "@/schemas/auth";
 import {
 	createSession,
@@ -78,24 +78,26 @@ authRoutes.post("/logout", auth, async (c) => {
 	return c.text("User successfully logged out");
 });
 
-authRoutes.post(
-	"/onboard",
-	onboard,
-	valibot("json", OnboardSchema),
-	async (c) => {
-		const user = c.get("user");
-		const payload = c.req.valid("json");
-		const db = c.get("db");
+authRoutes.post("/onboard", valibot("json", OnboardSchema), async (c) => {
+	const user = c.get("user");
 
-		await db
-			.insert(profilesTable)
-			.values({ userId: user.id, ...payload })
-			.catch(handleDbError);
-
-		await db.update(usersTable).set({ onboarded: true }).catch(handleDbError);
-
-		return c.text("User's profile created successfully", 201);
+	if (!user) {
+		return c.text("User is not logged in", 401);
+	} else if (user.onboarded) {
+		return c.text("User has already onboarded", 400);
 	}
-);
+
+	const payload = c.req.valid("json");
+	const db = c.get("db");
+
+	await db
+		.insert(profilesTable)
+		.values({ userId: user.id, ...payload })
+		.catch(handleDbError);
+
+	await db.update(usersTable).set({ onboarded: true }).catch(handleDbError);
+
+	return c.text("User's profile created successfully", 201);
+});
 
 export default authRoutes;
