@@ -5,10 +5,10 @@ import {
 	encodeHexLowerCase,
 } from "@oslojs/encoding";
 import { sha256 } from "@oslojs/crypto/sha2";
-import { TiDBServerlessDatabase } from "drizzle-orm/tidb-serverless";
 import { sessionsTable, usersTable } from "@/db";
 import { Context } from "hono";
 import { deleteCookie, setCookie } from "hono/cookie";
+import { NodePgDatabase } from "drizzle-orm/node-postgres";
 
 const EXPIRY = 1000 * 60 * 60 * 24 * 30; // 30 days
 const REFRESH_THRESH = EXPIRY / 2;
@@ -21,7 +21,7 @@ const BASE_SESSION_OPTS = {
 export const SESSION_COOKIE_NAME = "upgress_session";
 
 export async function createSession(
-	db: TiDBServerlessDatabase,
+	db: NodePgDatabase,
 	userId: string
 ): Promise<{ token: string; session: Session }> {
 	const bytes = new Uint8Array(20);
@@ -43,7 +43,7 @@ export async function createSession(
 }
 
 export async function validateSessionToken(
-	db: TiDBServerlessDatabase,
+	db: NodePgDatabase,
 	token: string
 ): Promise<SessionValidation> {
 	const sessionId = encodeHexLowerCase(
@@ -55,7 +55,6 @@ export async function validateSessionToken(
 			user: {
 				id: usersTable.id,
 				email: usersTable.email,
-				username: usersTable.username,
 				emailVerified: usersTable.emailVerified,
 			},
 			expiresAt: sessionsTable.expiresAt,
@@ -87,7 +86,7 @@ export async function validateSessionToken(
 }
 
 export async function invalidateSession(
-	db: TiDBServerlessDatabase,
+	db: NodePgDatabase,
 	sessionId: string
 ): Promise<void> {
 	await db.delete(sessionsTable).where(eq(sessionsTable.id, sessionId));

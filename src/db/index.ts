@@ -1,21 +1,23 @@
 import {
-	mysqlTable,
-	varchar,
-	datetime,
-	text,
 	boolean,
-} from "drizzle-orm/mysql-core";
+	pgTable,
+	text,
+	timestamp,
+	varchar,
+} from "drizzle-orm/pg-core";
 
-export const usersTable = mysqlTable("users", {
+export const usersTable = pgTable("users", {
 	id: varchar("id", { length: 25 }).primaryKey(),
 	email: text("email").unique().notNull(),
-	username: text("username").unique().notNull(),
 	encryptedPwd: varchar("encrypted_pwd", { length: 30 }),
 	emailVerified: boolean("email_verified").notNull(),
 });
 
-export const sessionsTable = mysqlTable("sessions", {
+export const sessionsTable = pgTable("sessions", {
 	id: varchar("id", { length: 255 }).primaryKey(),
 	userId: varchar("id", { length: 25 }).references(() => usersTable.id),
-	expiresAt: datetime("expires_at").notNull(),
+	expiresAt: timestamp("expires_at", {
+		withTimezone: true,
+		mode: "date",
+	}).notNull(),
 });

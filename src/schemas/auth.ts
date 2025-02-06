@@ -5,7 +5,6 @@ import {
 	InferInput,
 	maxLength,
 	minLength,
-	nanoid,
 	object,
 	pipe,
 	string,
@@ -14,29 +13,19 @@ import {
 	union,
 } from "valibot";
 
-export const EmailSchema = pipe(
+const EmailSchema = pipe(
 	string(),
 	email("Invalid email address"),
-	maxLength(63, "Email is too long"),
+	maxLength(60, "Email is too long"),
 	toLowerCase(),
 	check(
 		(e) => !e.includes("+"),
-		"We don't support email address that contains '+'"
+		"We don't support email address that contains character '+'"
 	)
 );
 
-export const UsernameSchema = pipe(
-	string(),
-	minLength(3, "Username must be at least 3 characters long"),
-	maxLength(30, "Username must be at most 30 characters long"),
-	nanoid(
-		"Username can only contains the following characters: a-z, A-Z, 0-9, _, -"
-	),
-	toLowerCase()
-);
-
 export const LoginSchema = object({
-	identifier: union([UsernameSchema, EmailSchema]),
+	email: EmailSchema,
 	password: pipe(
 		string(),
 		minLength(8, "Password must be at least 3 characters long"),
@@ -47,7 +36,6 @@ export const LoginSchema = object({
 export const SignupSchema = pipe(
 	object({
 		email: EmailSchema,
-		username: UsernameSchema,
 		password: pipe(
 			string(),
 			minLength(8, "Password must be at least 3 characters long"),

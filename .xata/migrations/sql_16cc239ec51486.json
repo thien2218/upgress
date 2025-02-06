@@ -1,0 +1,18 @@
+{
+  "done": true,
+  "migration": {
+    "name": "sql_16cc239ec51486",
+    "operations": [
+      {
+        "sql": {
+          "up": "CREATE TABLE profiles (user_id varchar(25) PRIMARY KEY NOT NULL, first_name text NOT NULL, last_name text NOT NULL, pronoun text, profile_image text, joined_since date DEFAULT current_date NOT NULL)"
+        }
+      }
+    ]
+  },
+  "migrationType": "inferred",
+  "name": "sql_16cc239ec51486",
+  "parent": "mig_cuft1i1f9c09ofa12tng",
+  "schema": "public",
+  "startedAt": "2025-02-02T20:10:44.062572Z"
+}

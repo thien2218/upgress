@@ -1,8 +1,7 @@
 import { AppEnv } from "@/context";
 import { Auth, Unauth } from "@/types";
 import { SESSION_COOKIE_NAME, validateSessionToken } from "@/utils/auth";
-import { connect } from "@tidbcloud/serverless";
-import { drizzle } from "drizzle-orm/tidb-serverless";
+import { drizzle } from "drizzle-orm/node-postgres";
 import { Input, MiddlewareHandler } from "hono";
 import { getCookie } from "hono/cookie";
 import { HTTPException } from "hono/http-exception";

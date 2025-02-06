@@ -6,8 +6,8 @@ config({ path: `.env.${process.env.NODE_ENV}` });
 export default defineConfig({
 	out: "./drizzle",
 	schema: "./src/db",
-	dialect: "mysql",
+	dialect: "postgresql",
 	dbCredentials: {
-		url: process.env.DATABASE_URL!,
+		url: process.env.DB_URL!,
 	},
 });

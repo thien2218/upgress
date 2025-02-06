@@ -1,0 +1,6 @@
+{
+  "databaseURL": "https://Huynh-Ngoc-Thien-s-workspace-4gq9m9.eu-central-1.xata.sh/db/upgress-db",
+  "codegen": {
+    "output": "src/db/xata.ts"
+  }
+}

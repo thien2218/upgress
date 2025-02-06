@@ -1,0 +1,18 @@
+{
+  "done": true,
+  "migration": {
+    "name": "sql_38e1c8bf125880",
+    "operations": [
+      {
+        "sql": {
+          "up": "CREATE TABLE users (id varchar(25) PRIMARY KEY NOT NULL, email text NOT NULL, encrypted_pwd text, email_verified boolean NOT NULL, onboarded boolean DEFAULT false NOT NULL, CONSTRAINT users_email_unique UNIQUE (email))"
+        }
+      }
+    ]
+  },
+  "migrationType": "inferred",
+  "name": "sql_38e1c8bf125880",
+  "parent": "sql_c92d94caad6d64",
+  "schema": "public",
+  "startedAt": "2025-02-02T20:10:44.72063Z"
+}

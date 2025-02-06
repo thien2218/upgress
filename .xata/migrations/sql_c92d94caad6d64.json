@@ -1,0 +1,18 @@
+{
+  "done": true,
+  "migration": {
+    "name": "sql_c92d94caad6d64",
+    "operations": [
+      {
+        "sql": {
+          "up": "CREATE TABLE sessions (id varchar(25) PRIMARY KEY NOT NULL, user_id text, expires_at timestamp with time zone NOT NULL)"
+        }
+      }
+    ]
+  },
+  "migrationType": "inferred",
+  "name": "sql_c92d94caad6d64",
+  "parent": "sql_16cc239ec51486",
+  "schema": "public",
+  "startedAt": "2025-02-02T20:10:44.391163Z"
+}

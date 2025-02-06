@@ -8,7 +8,7 @@ import {
 	setSessionTokenCookie,
 } from "@/utils/auth";
 import { compare, hash } from "bcryptjs";
-import { eq, or } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { Hono } from "hono";
 import { nanoid } from "nanoid";
 
@@ -16,14 +16,14 @@ const authRoutes = new Hono<AppEnv>();
 
 // Signup a new user
 authRoutes.post("/signup", unauth, valibot("json", SignupSchema), async (c) => {
-	const { password, ...rest } = c.req.valid("json");
+	const { password, email } = c.req.valid("json");
 	const encryptedPwd = await hash(password, 11);
 	const userId = nanoid(25);
 	const db = c.get("db");
 
 	await db.insert(usersTable).values({
 		id: userId,
-		...rest,
+		email,
 		encryptedPwd,
 		emailVerified: false,
 	});
@@ -36,15 +36,13 @@ authRoutes.post("/signup", unauth, valibot("json", SignupSchema), async (c) => {
 
 // Login a user
 authRoutes.post("/login", unauth, valibot("json", LoginSchema), async (c) => {
-	const { identifier, password } = c.req.valid("json");
+	const { email, password } = c.req.valid("json");
 	const db = c.get("db");
 
 	const records = await db
 		.select({ id: usersTable.id, encryptedPwd: usersTable.encryptedPwd })
 		.from(usersTable)
-		.where(
-			or(eq(usersTable.email, identifier), eq(usersTable.email, identifier))
-		);
+		.where(eq(usersTable.email, email));
 
 	if (!records.length) {
 		return c.text("Incorrect email/username or password", 400);
