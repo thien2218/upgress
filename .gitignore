@@ -34,3 +34,6 @@ lerna-debug.log*
 
 # txt files
 *.txt
+
+# Xata logs
+.xata

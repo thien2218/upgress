@@ -23,6 +23,7 @@
     "@cloudflare/workers-types": "^4.20250109.0",
     "@types/bcryptjs": "^2.4.6",
     "@types/node": "^22.13.1",
+    "@types/pg": "^8.11.11",
     "dotenv": "^16.4.7",
     "drizzle-kit": "^0.30.4",
     "tsx": "^4.19.2",

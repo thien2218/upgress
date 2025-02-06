@@ -1,4 +1,5 @@
 import { AppEnv } from "@/context";
+import { getXataClient } from "@/db/xata";
 import { Auth, Unauth } from "@/types";
 import { SESSION_COOKIE_NAME, validateSessionToken } from "@/utils/auth";
 import { drizzle } from "drizzle-orm/node-postgres";
@@ -11,6 +12,7 @@ import {
 	InferOutput,
 	safeParseAsync,
 } from "valibot";
+import { Client } from "pg";
 
 // Schema validation
 type Targets = {
@@ -99,7 +101,10 @@ export const valibot =
 
 // Database connection
 export const db: MiddlewareHandler<AppEnv> = async (c, next) => {
-	const client = connect({ url: c.env.DB_URL });
+	const xata = getXataClient();
+	const client = new Client({ connectionString: xata.sql.connectionString });
+	await client.connect();
+
 	const db = drizzle({ client });
 	c.set("db", db);
 

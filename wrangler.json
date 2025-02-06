@@ -3,10 +3,10 @@
 	"name": "upgress",
 	"main": "src/index.ts",
 	"compatibility_date": "2025-02-05",
-	"compatibility_flags": ["nodejs_compat"]
-	// "vars": {
-	//   "MY_VAR": "my-variable"
-	// },
+	"compatibility_flags": ["nodejs_compat"],
+	"vars": {
+		"XATA_BRANCH": "main"
+	}
 	// "kv_namespaces": [
 	//   {
 	//     "binding": "MY_KV_NAMESPACE",
