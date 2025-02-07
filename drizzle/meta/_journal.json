@@ -50,6 +50,13 @@
       "when": 1738866723547,
       "tag": "0006_yellow_riptide",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1738866727147,
+      "tag": "0007_acoustic_hex",
+      "breakpoints": true
     }
   ]
 }

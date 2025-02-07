@@ -3,7 +3,7 @@ import { resourcesTable } from "@/db";
 import { auth, valibot } from "@/middlewares";
 import { CreateResourceSchema, UpdateResourceSchema } from "@/schemas/resource";
 import { handleDbError } from "@/utils/db";
-import { and, eq } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { Hono } from "hono";
 import { nanoid } from "nanoid";
 
@@ -81,13 +81,18 @@ resourceRoutes.patch(
 		const payload = c.req.valid("json");
 		const id = nanoid(25);
 
-		await db
+		const rows = await db
 			.update(resourcesTable)
 			.set(payload)
 			.where(
 				and(eq(resourcesTable.id, id), eq(resourcesTable.userId, userId))
 			)
+			.returning({ updated: sql<boolean>`true` })
 			.catch(handleDbError);
+
+		if (!rows.length) {
+			return c.text("No resource found with specified id to update", 404);
+		}
 
 		return c.text("Resource successfully updated");
 	}
@@ -98,10 +103,15 @@ resourceRoutes.delete("/:id", async (c) => {
 	const db = c.get("db");
 	const id = nanoid(25);
 
-	await db
+	const rows = await db
 		.delete(resourcesTable)
 		.where(and(eq(resourcesTable.id, id), eq(resourcesTable.userId, userId)))
+		.returning({ updated: sql<boolean>`true` })
 		.catch(handleDbError);
+
+	if (!rows.length) {
+		return c.text("No resource found with specified id to delete", 404);
+	}
 
 	return c.text("Resource successfully deleted");
 });

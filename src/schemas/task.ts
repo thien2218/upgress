@@ -1,4 +1,5 @@
 import {
+	check,
 	date,
 	maxLength,
 	maxValue,
@@ -7,6 +8,7 @@ import {
 	number,
 	object,
 	optional,
+	partial,
 	picklist,
 	pipe,
 	string,
@@ -31,3 +33,11 @@ export const CreateTaskSchema = object({
 	status: picklist(["pending", "in-progress", "completed"]),
 	dueDate: optional(date()),
 });
+
+export const UpdateTaskSchema = pipe(
+	partial(CreateTaskSchema),
+	check(
+		(v) => Object.keys(v).length > 0,
+		"At least one field must be provided to update a task"
+	)
+);

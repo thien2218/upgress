@@ -57,7 +57,7 @@ export const roadmapsTable = pgTable(
 		name: varchar("name", { length: 100 }).notNull(),
 		budget: real("budget").default(0).notNull(),
 		commitment: text("commitment").notNull(),
-		goal: text("goal"),
+		goal: text("goal").notNull(),
 		prerequisite: varchar("prerequisite", { length: 25 }),
 	},
 	(table) => [
@@ -71,6 +71,9 @@ export const roadmapsTable = pgTable(
 
 export const milestonesTable = pgTable("milestones", {
 	id: varchar("id", { length: 25 }).primaryKey(),
+	userId: varchar("user_id", { length: 25 }).references(() => usersTable.id, {
+		onDelete: "set null",
+	}),
 	target: varchar("target", { length: 100 }).notNull(),
 	deadline: date("deadline", { mode: "date" }).notNull(),
 	description: text("description"),
@@ -103,6 +106,9 @@ export const statusEnum = pgEnum("status_enum", [
 
 export const tasksTable = pgTable("tasks", {
 	id: varchar("id", { length: 25 }).primaryKey(),
+	userId: varchar("user_id", { length: 25 }).references(() => usersTable.id, {
+		onDelete: "set null",
+	}),
 	milestoneId: varchar("milestone_id", { length: 25 })
 		.notNull()
 		.references(() => milestonesTable.id, { onDelete: "cascade" }),
