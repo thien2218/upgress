@@ -2,6 +2,7 @@ import { sql } from "drizzle-orm";
 import {
 	boolean,
 	date,
+	foreignKey,
 	integer,
 	pgEnum,
 	pgTable,
@@ -29,7 +30,7 @@ export const profilesTable = pgTable("profiles", {
 	lastName: varchar("last_name", { length: 50 }).notNull(),
 	profileImage: text("profile_image"),
 	bio: text("bio"),
-	joinedSince: date("joined_since")
+	joinedSince: date("joined_since", { mode: "date" })
 		.default(sql`CURRENT_DATE`)
 		.notNull(),
 });
@@ -45,15 +46,34 @@ export const sessionsTable = pgTable("sessions", {
 	}).notNull(),
 });
 
-export const roadmapsTable = pgTable("roadmaps", {
+export const roadmapsTable = pgTable(
+	"roadmaps",
+	{
+		id: varchar("id", { length: 25 }).primaryKey(),
+		userId: varchar("user_id", { length: 25 }).references(
+			() => usersTable.id,
+			{ onDelete: "set null" }
+		),
+		name: varchar("name", { length: 100 }).notNull(),
+		budget: real("budget").default(0).notNull(),
+		commitment: text("commitment").notNull(),
+		goal: text("goal"),
+		prerequisite: varchar("prerequisite", { length: 25 }),
+	},
+	(table) => [
+		foreignKey({
+			name: "roadmap_prerequisite_fk",
+			columns: [table.prerequisite],
+			foreignColumns: [table.id],
+		}).onDelete("set null"),
+	]
+);
+
+export const milestonesTable = pgTable("milestones", {
 	id: varchar("id", { length: 25 }).primaryKey(),
-	userId: varchar("user_id", { length: 25 }).references(() => usersTable.id, {
-		onDelete: "set null",
-	}),
-	name: varchar("name", { length: 100 }).notNull(),
-	budget: real("budget").default(0).notNull(),
-	commitment: text("commitment").notNull(),
-	goal: text("goal"),
+	target: varchar("target", { length: 100 }).notNull(),
+	deadline: date("deadline", { mode: "date" }).notNull(),
+	description: text("description"),
 });
 
 export const roadmapToMilestone = pgTable(
@@ -75,13 +95,6 @@ export const roadmapToMilestone = pgTable(
 	]
 );
 
-export const milestonesTable = pgTable("milestones", {
-	id: varchar("id", { length: 25 }).primaryKey(),
-	target: varchar("target", { length: 100 }).notNull(),
-	deadline: date("deadline").notNull(),
-	description: text("description"),
-});
-
 export const statusEnum = pgEnum("status_enum", [
 	"pending",
 	"in-progress",
@@ -97,14 +110,35 @@ export const tasksTable = pgTable("tasks", {
 	priority: smallint("priority").notNull(),
 	status: statusEnum().default("pending").notNull(),
 	difficulty: smallint("difficulty").notNull(),
-	dueDate: date("due_date"),
+	dueDate: date("due_date", { mode: "date" }),
 });
 
 export const resourcesTable = pgTable("resources", {
 	id: varchar("id", { length: 25 }).primaryKey(),
+	userId: varchar("user_id", { length: 25 }).references(() => usersTable.id, {
+		onDelete: "set null",
+	}),
 	name: varchar("name", { length: 100 }).notNull(),
 	type: varchar("type", { length: 20 }).notNull(),
 	link: text("link").notNull(),
 	cost: real("cost").default(0).notNull(),
 	description: text("description"),
 });
+
+export const resourceToMilestone = pgTable(
+	"resource_to_milestone",
+	{
+		resourceId: varchar("resource_id", { length: 25 })
+			.notNull()
+			.references(() => resourcesTable.id, { onDelete: "cascade" }),
+		milestoneId: varchar("milestone_id", { length: 25 })
+			.notNull()
+			.references(() => milestonesTable.id, { onDelete: "cascade" }),
+	},
+	(table) => [
+		primaryKey({
+			name: "resource_milestone_key",
+			columns: [table.resourceId, table.milestoneId],
+		}),
+	]
+);

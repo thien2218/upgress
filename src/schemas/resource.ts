@@ -1,17 +1,19 @@
 import {
+	check,
 	maxLength,
 	minValue,
 	nonEmpty,
 	number,
 	object,
 	optional,
+	partial,
 	pipe,
 	startsWith,
 	string,
 	url,
 } from "valibot";
 
-export const CreateResource = object({
+export const CreateResourceSchema = object({
 	name: pipe(
 		string(),
 		nonEmpty("Resource name connot be empty"),
@@ -20,12 +22,10 @@ export const CreateResource = object({
 	description: optional(
 		pipe(string(), nonEmpty("Resource description connot be empty"))
 	),
-	type: optional(
-		pipe(
-			string(),
-			nonEmpty("Resource type connot be empty"),
-			maxLength(20, "Resource type length cannot exceed 20")
-		)
+	type: pipe(
+		string(),
+		nonEmpty("Resource type connot be empty"),
+		maxLength(20, "Resource type length cannot exceed 20")
 	),
 	link: pipe(
 		string(),
@@ -34,3 +34,11 @@ export const CreateResource = object({
 	),
 	cost: pipe(number(), minValue(0, "Cost cannot be lower than 0")),
 });
+
+export const UpdateResourceSchema = pipe(
+	partial(CreateResourceSchema),
+	check(
+		(v) => Object.keys(v).length > 0,
+		"At least one field must be provided to update a resource"
+	)
+);

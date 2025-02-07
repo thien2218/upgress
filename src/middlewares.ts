@@ -1,6 +1,5 @@
-import { AppEnv } from "@/context";
+import { AppEnv, AuthEnv, UnauthEnv } from "@/context";
 import { getXataClient } from "@/db/xata";
-import { Auth, Unauth } from "@/types";
 import { SESSION_COOKIE_NAME, validateSessionToken } from "@/utils/auth";
 import { Input, MiddlewareHandler } from "hono";
 import { getCookie } from "hono/cookie";
@@ -121,10 +120,6 @@ export const session: MiddlewareHandler<AppEnv> = async (c, next) => {
 };
 
 // Marks routes to only allow authenticated users
-interface AuthEnv extends AppEnv {
-	Variables: Auth & AppEnv["Variables"];
-}
-
 export const auth: MiddlewareHandler<AuthEnv> = async (c, next) => {
 	const user = c.get("user");
 
@@ -136,10 +131,6 @@ export const auth: MiddlewareHandler<AuthEnv> = async (c, next) => {
 };
 
 // Marks routes to only allow unauthenticated users
-interface UnauthEnv extends AppEnv {
-	Variables: Unauth & AppEnv["Variables"];
-}
-
 export const unauth: MiddlewareHandler<UnauthEnv> = async (c, next) => {
 	const user = c.get("user");
 

@@ -1,6 +1,14 @@
 import type { Env } from "hono";
-import { SessionValidation } from "./types";
+import { Auth, SessionValidation, Unauth } from "./types";
 import { XataHttpDatabase } from "drizzle-orm/xata-http";
+
+export interface AuthEnv extends AppEnv {
+	Variables: Auth & AppEnv["Variables"];
+}
+
+export interface UnauthEnv extends AppEnv {
+	Variables: Unauth & AppEnv["Variables"];
+}
 
 export interface AppEnv extends Env {
 	Variables: SessionValidation & {
