@@ -1,10 +1,13 @@
 import { AuthEnv } from "@/context";
 import { milestonesTable, roadmapsTable, roadmapToMilestone } from "@/db";
 import { auth, valibot } from "@/middlewares";
-import { CreateMilestoneSchema } from "@/schemas/milestone";
+import {
+	CreateMilestoneSchema,
+	ReorderMilestoneSchema,
+} from "@/schemas/milestone";
 import { CreateRoadmapSchema, UpdateRoadmapSchema } from "@/schemas/roadmap";
 import { handleDbError } from "@/utils/db";
-import { and, eq, max, sql } from "drizzle-orm";
+import { and, eq, inArray, max, sql } from "drizzle-orm";
 import { Hono } from "hono";
 import { nanoid } from "nanoid";
 
@@ -131,6 +134,59 @@ roadmapRoutes.get("/:id", async (c) => {
 
 	return c.json({ ...roadmap, milestones });
 });
+
+roadmapRoutes.put(
+	"/:id/milestone",
+	valibot("json", ReorderMilestoneSchema),
+	async (c) => {
+		const id = c.req.param("id");
+		const { id: userId } = c.get("user");
+		const { minOrder, milestoneIds } = c.req.valid("json");
+		const db = c.get("db");
+
+		const ids = await db
+			.select({ value: sql`1` })
+			.from(roadmapToMilestone)
+			.innerJoin(
+				roadmapsTable,
+				eq(roadmapToMilestone.roadmapId, roadmapsTable.id)
+			)
+			.where(
+				and(
+					eq(roadmapsTable.id, id),
+					eq(roadmapsTable.userId, userId),
+					inArray(roadmapToMilestone.milestoneId, milestoneIds)
+				)
+			)
+			.catch(handleDbError);
+
+		if (ids.length !== milestoneIds.length) {
+			return c.text(
+				"Provided list of milestone ids does not match with the ones in the database"
+			);
+		}
+
+		const caseExpression = sql`
+         CASE ${sql.join(
+				milestoneIds.map(
+					(id, index) =>
+						sql`WHEN ${roadmapToMilestone.roadmapId} = ${id} THEN ${
+							minOrder + index
+						}`
+				),
+				" "
+			)} END
+      `;
+
+		await db
+			.update(roadmapToMilestone)
+			.set({ order: caseExpression })
+			.where(inArray(roadmapToMilestone.milestoneId, milestoneIds))
+			.catch(handleDbError);
+
+		return c.text("Milestone reordered successfully");
+	}
+);
 
 roadmapRoutes.patch("/:id", valibot("json", UpdateRoadmapSchema), async (c) => {
 	const id = c.req.param("id");

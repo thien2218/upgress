@@ -1,8 +1,13 @@
 import {
+	array,
 	check,
 	date,
+	integer,
+	length,
 	maxLength,
+	nanoid,
 	nonEmpty,
+	number,
 	object,
 	optional,
 	partial,
@@ -35,4 +40,23 @@ export const UpdateMilestoneSchema = pipe(
 		(v) => Object.keys(v).length > 0,
 		"At least one field must be provided to update a milestone"
 	)
+);
+
+export const ReorderMilestoneSchema = pipe(
+	object({
+		milestoneIds: pipe(
+			array(
+				pipe(
+					string(),
+					length(25, "Invalid milestone ID"),
+					nanoid("Invalid milestone ID")
+				)
+			),
+			nonEmpty("List of milestone to reorder cannot be empty")
+		),
+		minOrder: pipe(
+			number(),
+			integer("Minimum order number must be an integer")
+		),
+	})
 );

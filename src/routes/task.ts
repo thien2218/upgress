@@ -1,5 +1,5 @@
 import { AuthEnv } from "@/context";
-import { tasksTable } from "@/db";
+import { milestonesTable, tasksTable } from "@/db";
 import { auth, valibot } from "@/middlewares";
 import { UpdateTaskSchema } from "@/schemas/task";
 import { handleDbError } from "@/utils/db";
@@ -20,12 +20,19 @@ taskRoutes.patch("/:id", valibot("json", UpdateTaskSchema), async (c) => {
 		.update(tasksTable)
 		.set(payload)
 		.where(and(eq(tasksTable.id, id), eq(tasksTable.userId, userId)))
-		.returning({ updated: sql`true` })
+		.returning({ milestoneId: tasksTable.milestoneId })
 		.catch(handleDbError);
 
 	if (!rows.length) {
 		return c.text("No task found with specified id to update", 404);
 	}
+
+	const milestoneId = rows[0].milestoneId;
+
+	await db
+		.update(milestonesTable)
+		.set({ updatedAt: new Date() })
+		.where(eq(milestonesTable.id, milestoneId));
 
 	return c.text("Task updated successfully");
 });

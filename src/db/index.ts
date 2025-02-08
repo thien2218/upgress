@@ -3,7 +3,6 @@ import {
 	boolean,
 	date,
 	foreignKey,
-	integer,
 	pgEnum,
 	pgTable,
 	primaryKey,
@@ -59,6 +58,9 @@ export const roadmapsTable = pgTable(
 		commitment: text("commitment").notNull(),
 		goal: text("goal").notNull(),
 		prerequisite: varchar("prerequisite", { length: 25 }),
+		createdAt: timestamp("created_at", { withTimezone: true, mode: "date" })
+			.default(sql`now()`)
+			.notNull(),
 	},
 	(table) => [
 		foreignKey({
@@ -77,6 +79,9 @@ export const milestonesTable = pgTable("milestones", {
 	target: varchar("target", { length: 100 }).notNull(),
 	deadline: date("deadline", { mode: "date" }).notNull(),
 	description: text("description"),
+	updatedAt: timestamp("updated_at", { withTimezone: true, mode: "date" })
+		.default(sql`now()`)
+		.notNull(),
 });
 
 export const roadmapToMilestone = pgTable(
@@ -88,7 +93,7 @@ export const roadmapToMilestone = pgTable(
 		milestoneId: varchar("milestone_id", { length: 25 })
 			.notNull()
 			.references(() => milestonesTable.id, { onDelete: "cascade" }),
-		order: integer("order").notNull(),
+		order: smallint("order").notNull(),
 	},
 	(table) => [
 		primaryKey({
@@ -117,6 +122,9 @@ export const tasksTable = pgTable("tasks", {
 	status: statusEnum().default("pending").notNull(),
 	difficulty: smallint("difficulty").notNull(),
 	dueDate: date("due_date", { mode: "date" }),
+	createdAt: timestamp("created_at", { withTimezone: true, mode: "date" })
+		.default(sql`now()`)
+		.notNull(),
 });
 
 export const resourcesTable = pgTable("resources", {
@@ -140,6 +148,9 @@ export const resourceToMilestone = pgTable(
 		milestoneId: varchar("milestone_id", { length: 25 })
 			.notNull()
 			.references(() => milestonesTable.id, { onDelete: "cascade" }),
+		addedAt: timestamp("added_at", { withTimezone: true, mode: "date" })
+			.default(sql`now()`)
+			.notNull(),
 	},
 	(table) => [
 		primaryKey({

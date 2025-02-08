@@ -30,12 +30,16 @@ export const CreateTaskSchema = object({
 		minValue(1, "Task priority's value cannot be smaller than 1"),
 		maxValue(5, "Task priority's value cannot be greater than 5")
 	),
-	status: picklist(["pending", "in-progress", "completed"]),
 	dueDate: optional(date()),
 });
 
 export const UpdateTaskSchema = pipe(
-	partial(CreateTaskSchema),
+	partial(
+		object({
+			...CreateTaskSchema.entries,
+			status: picklist(["pending", "in-progress", "completed"]),
+		})
+	),
 	check(
 		(v) => Object.keys(v).length > 0,
 		"At least one field must be provided to update a task"
