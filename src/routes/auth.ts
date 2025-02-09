@@ -1,7 +1,8 @@
 import { AppEnv } from "@/context";
 import { profilesTable, usersTable } from "@/db";
 import { auth, unauth, valibot } from "@/middlewares";
-import { LoginSchema, OnboardSchema, SignupSchema } from "@/schemas/auth";
+import { LoginSchema, SignupSchema } from "@/schemas/auth";
+import { OnboardSchema } from "@/schemas/profile";
 import {
 	createSession,
 	deleteSessionTokenCookie,
@@ -66,9 +67,6 @@ authRoutes.post("/login", unauth, valibot("json", LoginSchema), async (c) => {
 
 authRoutes.post("/logout", auth, async (c) => {
 	const session = c.get("session");
-	// Session invalidation removes the session from the database
-	// No need to await it since it can be done in the background
-	// or later by a cron job
 	invalidateSession(c.get("db"), c.env.KV_CACHE, session.id);
 	deleteSessionTokenCookie(c);
 	return c.text("User successfully logged out");
@@ -76,8 +74,9 @@ authRoutes.post("/logout", auth, async (c) => {
 
 authRoutes.post("/onboard", valibot("json", OnboardSchema), async (c) => {
 	const user = c.get("user");
+	const session = c.get("session");
 
-	if (!user) {
+	if (!user || !session) {
 		return c.text("User is not logged in", 401);
 	} else if (user.onboarded) {
 		return c.text("User has already onboarded", 400);
@@ -85,13 +84,24 @@ authRoutes.post("/onboard", valibot("json", OnboardSchema), async (c) => {
 
 	const payload = c.req.valid("json");
 	const db = c.get("db");
+	const kv = c.env.KV_CACHE;
 
-	await db
+	const records = await db
 		.insert(profilesTable)
 		.values({ userId: user.id, ...payload })
+		.returning({ joinedSince: profilesTable.joinedSince })
 		.catch(handleDbError);
 
 	await db.update(usersTable).set({ onboarded: true }).catch(handleDbError);
+
+	kv.put(`profile/${user.id}`, JSON.stringify({ ...payload, ...records[0] }));
+	kv.put(
+		`session/${session.id}`,
+		JSON.stringify({
+			user: { ...user, onboarded: true },
+			expiresAt: session.expiresAt,
+		})
+	);
 
 	return c.text("User's profile created successfully", 201);
 });

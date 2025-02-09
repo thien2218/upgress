@@ -1,34 +1,70 @@
-import { AppEnv } from "@/context";
+import { AuthEnv } from "@/context";
 import { profilesTable } from "@/db";
-import { auth } from "@/middlewares";
+import { auth, valibot } from "@/middlewares";
+import { UpdateProfileSchema } from "@/schemas/profile";
+import { Profile } from "@/types";
 import { handleDbError } from "@/utils/db";
 import { eq } from "drizzle-orm";
 import { Hono } from "hono";
 
-const profileRoutes = new Hono<AppEnv>();
+const profileRoutes = new Hono<AuthEnv>();
+const profileColumns = {
+	firstName: profilesTable.firstName,
+	lastName: profilesTable.lastName,
+	profileImage: profilesTable.profileImage,
+	bio: profilesTable.bio,
+	joinedSince: profilesTable.joinedSince,
+};
 
-profileRoutes.get("/me", auth, async (c) => {
+profileRoutes.use(auth);
+
+profileRoutes.get("/me", async (c) => {
 	const user = c.get("user");
 	const db = c.get("db");
+	const kv = c.env.KV_CACHE;
+
+	const cached = await kv.get(`profile/${user.id}`);
+	let profile: Profile;
+
+	if (cached) {
+		profile = JSON.parse(cached);
+	} else {
+		const records = await db
+			.select(profileColumns)
+			.from(profilesTable)
+			.where(eq(profilesTable.userId, user.id))
+			.catch(handleDbError);
+
+		if (!records.length) {
+			return c.text("User has not completed their onboarding process", 403);
+		}
+
+		profile = records[0];
+		kv.put(`profiles/${user.id}`, JSON.stringify(profile));
+	}
+
+	return c.json({ ...user, ...profile });
+});
+
+profileRoutes.patch("/", valibot("json", UpdateProfileSchema), async (c) => {
+	const { id } = c.get("user");
+	const payload = c.req.valid("json");
+	const db = c.get("db");
+	const kv = c.env.KV_CACHE;
 
 	const records = await db
-		.select({
-			firstName: profilesTable.firstName,
-			lastName: profilesTable.lastName,
-			profileImage: profilesTable.profileImage,
-			bio: profilesTable.bio,
-		})
-		.from(profilesTable)
-		.where(eq(profilesTable.userId, user.id))
+		.update(profilesTable)
+		.set(payload)
+		.where(eq(profilesTable.userId, id))
+		.returning(profileColumns)
 		.catch(handleDbError);
 
 	if (!records.length) {
-		return c.text("User has not completed their onboarding process", 403);
+		return c.text("No profile found for this user", 404);
 	}
 
-	const profile = records[0];
-
-	return c.json({ ...user, ...profile });
+	kv.put(`profiles/${id}`, JSON.stringify(records[0]));
+	return c.text("Profile updated successfully");
 });
 
 export default profileRoutes;

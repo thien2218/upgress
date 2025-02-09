@@ -16,18 +16,18 @@ taskRoutes.patch("/:id", valibot("json", UpdateTaskSchema), async (c) => {
 	const payload = c.req.valid("json");
 	const db = c.get("db");
 
-	const rows = await db
+	const records = await db
 		.update(tasksTable)
 		.set(payload)
 		.where(and(eq(tasksTable.id, id), eq(tasksTable.userId, userId)))
 		.returning({ milestoneId: tasksTable.milestoneId })
 		.catch(handleDbError);
 
-	if (!rows.length) {
+	if (!records.length) {
 		return c.text("No task found with specified id to update", 404);
 	}
 
-	const milestoneId = rows[0].milestoneId;
+	const milestoneId = records[0].milestoneId;
 
 	await db
 		.update(milestonesTable)
@@ -42,13 +42,13 @@ taskRoutes.delete("/:id", async (c) => {
 	const { id: userId } = c.get("user");
 	const db = c.get("db");
 
-	const rows = await db
+	const records = await db
 		.delete(tasksTable)
 		.where(and(eq(tasksTable.id, id), eq(tasksTable.userId, userId)))
 		.returning({ updated: sql`true` })
 		.catch(handleDbError);
 
-	if (!rows.length) {
+	if (!records.length) {
 		return c.text("No task found with specified id to delete", 404);
 	}
 

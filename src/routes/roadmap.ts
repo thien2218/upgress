@@ -194,13 +194,13 @@ roadmapRoutes.patch("/:id", valibot("json", UpdateRoadmapSchema), async (c) => {
 	const payload = c.req.valid("json");
 	const db = c.get("db");
 
-	const rows = await db
+	const records = await db
 		.update(roadmapsTable)
 		.set(payload)
 		.returning({ updated: sql`true` })
 		.where(and(eq(roadmapsTable.id, id), eq(roadmapsTable.userId, userId)));
 
-	if (!rows.length) {
+	if (!records.length) {
 		return c.text(
 			"No roadmap found to update from this user with the specified id",
 			404
@@ -215,12 +215,12 @@ roadmapRoutes.delete("/:id", async (c) => {
 	const { id: userId } = c.get("user");
 	const db = c.get("db");
 
-	const rows = await db
+	const records = await db
 		.delete(roadmapsTable)
 		.returning({ updated: sql`true` })
 		.where(and(eq(roadmapsTable.id, id), eq(roadmapsTable.userId, userId)));
 
-	if (!rows.length) {
+	if (!records.length) {
 		return c.text(
 			"No roadmap found to delete from this user with the specified id",
 			404

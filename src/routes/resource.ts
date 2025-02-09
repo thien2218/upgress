@@ -2,117 +2,142 @@ import { AuthEnv } from "@/context";
 import { resourcesTable } from "@/db";
 import { auth, valibot } from "@/middlewares";
 import { CreateResourceSchema, UpdateResourceSchema } from "@/schemas/resource";
+import { Resource } from "@/types";
 import { handleDbError } from "@/utils/db";
 import { and, eq, sql } from "drizzle-orm";
 import { Hono } from "hono";
 import { nanoid } from "nanoid";
 
 const resourceRoutes = new Hono<AuthEnv>();
+const resourceColumns = {
+	name: resourcesTable.name,
+	type: resourcesTable.type,
+	cost: resourcesTable.cost,
+	link: resourcesTable.link,
+	description: resourcesTable.description,
+};
 
 resourceRoutes.use(auth);
 
 resourceRoutes.post("/", valibot("json", CreateResourceSchema), async (c) => {
-	const { id: userId } = c.get("user");
-	const db = c.get("db");
-	const payload = c.req.valid("json");
 	const id = nanoid(25);
+	const { id: userId } = c.get("user");
+	const payload = c.req.valid("json");
+	const db = c.get("db");
+	const kv = c.env.KV_CACHE;
 
 	await db
 		.insert(resourcesTable)
 		.values({ id, userId, ...payload })
 		.catch(handleDbError);
 
+	kv.put(`resources/${id}`, JSON.stringify(payload));
 	return c.text("New resource created successfully");
 });
 
 resourceRoutes.get("/", async (c) => {
 	const { id: userId } = c.get("user");
 	const db = c.get("db");
+	const kv = c.env.KV_CACHE;
 
-	const records = await db
-		.select({
-			name: resourcesTable.name,
-			type: resourcesTable.type,
-			cost: resourcesTable.cost,
-			link: resourcesTable.link,
-			description: resourcesTable.description,
-		})
-		.from(resourcesTable)
-		.where(eq(resourcesTable.userId, userId))
-		.catch(handleDbError);
+	const cached = await kv.get(`${userId}/resources`);
+	let resources: Resource[];
 
-	if (!records.length) {
-		return c.text("No resources found", 404);
+	if (cached) {
+		resources = JSON.parse(cached);
+	} else {
+		resources = await db
+			.select(resourceColumns)
+			.from(resourcesTable)
+			.where(eq(resourcesTable.userId, userId))
+			.catch(handleDbError);
+
+		if (!resources.length) {
+			return c.text("No resources found", 404);
+		}
+
+		kv.put(`${userId}/resources`, JSON.stringify(resources));
 	}
 
-	return c.json(records);
+	return c.json(resources);
 });
 
 resourceRoutes.get("/:id", async (c) => {
-	const { id: userId } = c.get("user");
 	const id = c.req.param("id");
+	const { id: userId } = c.get("user");
 	const db = c.get("db");
+	const kv = c.env.KV_CACHE;
 
-	const records = await db
-		.select({
-			name: resourcesTable.name,
-			type: resourcesTable.type,
-			cost: resourcesTable.cost,
-			link: resourcesTable.link,
-			description: resourcesTable.description,
-		})
-		.from(resourcesTable)
-		.where(and(eq(resourcesTable.userId, userId), eq(resourcesTable.id, id)))
-		.catch(handleDbError);
+	const cached = await kv.get(`resources/${id}`);
+	let resource: Resource;
 
-	if (!records.length) {
-		return c.text("No resource found", 404);
+	if (cached) {
+		resource = JSON.parse(cached);
+	} else {
+		const records = await db
+			.select(resourceColumns)
+			.from(resourcesTable)
+			.where(
+				and(eq(resourcesTable.userId, userId), eq(resourcesTable.id, id))
+			)
+			.catch(handleDbError);
+
+		if (!records.length) {
+			return c.text("No resource found", 404);
+		}
+
+		resource = records[0];
+		kv.put(`resources/${id}`, JSON.stringify(resource));
 	}
 
-	return c.json(records[0]);
+	return c.json(resource);
 });
 
 resourceRoutes.patch(
 	"/:id",
 	valibot("json", UpdateResourceSchema),
 	async (c) => {
+		const id = c.req.param("id");
 		const { id: userId } = c.get("user");
-		const db = c.get("db");
 		const payload = c.req.valid("json");
-		const id = nanoid(25);
+		const db = c.get("db");
+		const kv = c.env.KV_CACHE;
 
-		const rows = await db
+		const records = await db
 			.update(resourcesTable)
 			.set(payload)
 			.where(
 				and(eq(resourcesTable.id, id), eq(resourcesTable.userId, userId))
 			)
-			.returning({ updated: sql<boolean>`true` })
+			.returning(resourceColumns)
 			.catch(handleDbError);
 
-		if (!rows.length) {
+		if (!records.length) {
 			return c.text("No resource found with specified id to update", 404);
 		}
 
+		kv.put(`resources/${id}`, JSON.stringify(records[0]));
 		return c.text("Resource successfully updated");
 	}
 );
 
 resourceRoutes.delete("/:id", async (c) => {
+	const id = c.req.param("id");
 	const { id: userId } = c.get("user");
 	const db = c.get("db");
-	const id = nanoid(25);
+	const kv = c.env.KV_CACHE;
 
-	const rows = await db
+	const records = await db
 		.delete(resourcesTable)
 		.where(and(eq(resourcesTable.id, id), eq(resourcesTable.userId, userId)))
 		.returning({ updated: sql<boolean>`true` })
 		.catch(handleDbError);
 
-	if (!rows.length) {
+	if (!records.length) {
 		return c.text("No resource found with specified id to delete", 404);
 	}
 
+	kv.delete(`resources/${id}`);
 	return c.text("Resource successfully deleted");
 });
 

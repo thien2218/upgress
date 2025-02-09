@@ -74,7 +74,7 @@ milestoneRoutes.patch(
 		const payload = c.req.valid("json");
 		const db = c.get("db");
 
-		const rows = await db
+		const records = await db
 			.update(milestonesTable)
 			.set(payload)
 			.where(
@@ -83,7 +83,7 @@ milestoneRoutes.patch(
 			.returning({ updated: sql`true` })
 			.catch(handleDbError);
 
-		if (!rows.length) {
+		if (!records.length) {
 			return c.text("No resource found with specified id to update", 404);
 		}
 
@@ -96,7 +96,7 @@ milestoneRoutes.delete("/:id", async (c) => {
 	const { id: userId } = c.get("user");
 	const db = c.get("db");
 
-	const rows = await db
+	const records = await db
 		.delete(milestonesTable)
 		.where(
 			and(eq(milestonesTable.id, id), eq(milestonesTable.userId, userId))
@@ -104,7 +104,7 @@ milestoneRoutes.delete("/:id", async (c) => {
 		.returning({ updated: sql`true` })
 		.catch(handleDbError);
 
-	if (!rows.length) {
+	if (!records.length) {
 		return c.text("No resource found with specified id to update", 404);
 	}
 

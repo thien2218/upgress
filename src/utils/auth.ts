@@ -1,4 +1,10 @@
-import { Session, SessionValidation, User } from "@/types";
+import {
+	Auth,
+	Session,
+	SessionValidation,
+	StoredSessionData,
+	User,
+} from "@/types";
 import { eq } from "drizzle-orm";
 import {
 	encodeBase32LowerCaseNoPadding,
@@ -10,8 +16,6 @@ import { Context } from "hono";
 import { deleteCookie, setCookie } from "hono/cookie";
 import { handleDbError } from "./db";
 import { XataHttpDatabase } from "drizzle-orm/xata-http";
-
-type StoredSessionData = { user: User; expiresAt: Date };
 
 const EXPIRY = 1000 * 60 * 60 * 24 * 30; // 30 days
 const REFRESH_THRESH = EXPIRY / 2;
@@ -59,7 +63,7 @@ export async function validateSessionToken(
 	);
 
 	let storedSession: StoredSessionData;
-	let shouldWriteCache: boolean = false;
+	let shouldWriteCache = false;
 	const storedSessionStr = await kv.get(`session/${sessionId}`);
 
 	if (storedSessionStr) {
@@ -88,7 +92,7 @@ export async function validateSessionToken(
 		storedSession = records[0];
 	}
 
-	let result: SessionValidation = {
+	let result: Auth = {
 		session: { id: sessionId, expiresAt: storedSession.expiresAt },
 		user: storedSession.user,
 	};
@@ -109,7 +113,7 @@ export async function validateSessionToken(
 	}
 
 	if (shouldWriteCache) {
-		await kv.put(`session/${sessionId}`, JSON.stringify(result));
+		kv.put(`session/${sessionId}`, JSON.stringify(result));
 	}
 
 	return result;
