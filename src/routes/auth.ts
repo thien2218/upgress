@@ -9,6 +9,7 @@ import {
 	invalidateSession,
 	setSessionTokenCookie,
 } from "@/utils/auth";
+import { kvCacheWithTtl } from "@/utils/cache";
 import { handleDbError } from "@/utils/db";
 import { compare, hash } from "bcryptjs";
 import { eq } from "drizzle-orm";
@@ -94,14 +95,14 @@ authRoutes.post("/onboard", valibot("json", OnboardSchema), async (c) => {
 
 	await db.update(usersTable).set({ onboarded: true }).catch(handleDbError);
 
-	kv.put(`profile/${user.id}`, JSON.stringify({ ...payload, ...records[0] }));
-	kv.put(
-		`session/${session.id}`,
-		JSON.stringify({
-			user: { ...user, onboarded: true },
-			expiresAt: session.expiresAt,
-		})
-	);
+	kvCacheWithTtl("profile", kv, `profile/${user.id}`, {
+		...payload,
+		...records[0],
+	});
+	kvCacheWithTtl("session", kv, `session/${session.id}`, {
+		user: { ...user, onboarded: true },
+		expiresAt: session.expiresAt,
+	});
 
 	return c.text("User's profile created successfully", 201);
 });

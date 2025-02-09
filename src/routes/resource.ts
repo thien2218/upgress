@@ -3,6 +3,7 @@ import { resourcesTable } from "@/db";
 import { auth, valibot } from "@/middlewares";
 import { CreateResourceSchema, UpdateResourceSchema } from "@/schemas/resource";
 import { Resource } from "@/types";
+import { kvCacheWithTtl } from "@/utils/cache";
 import { handleDbError } from "@/utils/db";
 import { and, eq, sql } from "drizzle-orm";
 import { Hono } from "hono";
@@ -24,14 +25,13 @@ resourceRoutes.post("/", valibot("json", CreateResourceSchema), async (c) => {
 	const { id: userId } = c.get("user");
 	const payload = c.req.valid("json");
 	const db = c.get("db");
-	const kv = c.env.KV_CACHE;
 
 	await db
 		.insert(resourcesTable)
 		.values({ id, userId, ...payload })
 		.catch(handleDbError);
 
-	kv.put(`resources/${id}`, JSON.stringify(payload));
+	kvCacheWithTtl("resource", c.env.KV_CACHE, `resource/${id}`, payload);
 	return c.text("New resource created successfully");
 });
 
@@ -56,7 +56,7 @@ resourceRoutes.get("/", async (c) => {
 			return c.text("No resources found", 404);
 		}
 
-		kv.put(`${userId}/resources`, JSON.stringify(resources));
+		kvCacheWithTtl("resource", kv, `${userId}/resource`, resources);
 	}
 
 	return c.json(resources);
@@ -68,7 +68,7 @@ resourceRoutes.get("/:id", async (c) => {
 	const db = c.get("db");
 	const kv = c.env.KV_CACHE;
 
-	const cached = await kv.get(`resources/${id}`);
+	const cached = await kv.get(`resource/${id}`);
 	let resource: Resource;
 
 	if (cached) {
@@ -87,7 +87,7 @@ resourceRoutes.get("/:id", async (c) => {
 		}
 
 		resource = records[0];
-		kv.put(`resources/${id}`, JSON.stringify(resource));
+		kvCacheWithTtl("resource", kv, `resource/${id}`, resource);
 	}
 
 	return c.json(resource);
@@ -101,7 +101,6 @@ resourceRoutes.patch(
 		const { id: userId } = c.get("user");
 		const payload = c.req.valid("json");
 		const db = c.get("db");
-		const kv = c.env.KV_CACHE;
 
 		const records = await db
 			.update(resourcesTable)
@@ -116,7 +115,7 @@ resourceRoutes.patch(
 			return c.text("No resource found with specified id to update", 404);
 		}
 
-		kv.put(`resources/${id}`, JSON.stringify(records[0]));
+		kvCacheWithTtl("resource", c.env.KV_CACHE, `resource/${id}`, records[0]);
 		return c.text("Resource successfully updated");
 	}
 );
@@ -137,7 +136,7 @@ resourceRoutes.delete("/:id", async (c) => {
 		return c.text("No resource found with specified id to delete", 404);
 	}
 
-	kv.delete(`resources/${id}`);
+	kv.delete(`resource/${id}`);
 	return c.text("Resource successfully deleted");
 });
 

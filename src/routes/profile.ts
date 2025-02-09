@@ -3,6 +3,7 @@ import { profilesTable } from "@/db";
 import { auth, valibot } from "@/middlewares";
 import { UpdateProfileSchema } from "@/schemas/profile";
 import { Profile } from "@/types";
+import { kvCacheWithTtl } from "@/utils/cache";
 import { handleDbError } from "@/utils/db";
 import { eq } from "drizzle-orm";
 import { Hono } from "hono";
@@ -40,7 +41,7 @@ profileRoutes.get("/me", async (c) => {
 		}
 
 		profile = records[0];
-		kv.put(`profiles/${user.id}`, JSON.stringify(profile));
+		kvCacheWithTtl("profile", kv, `profile/${user.id}`, profile);
 	}
 
 	return c.json({ ...user, ...profile });
@@ -63,7 +64,7 @@ profileRoutes.patch("/", valibot("json", UpdateProfileSchema), async (c) => {
 		return c.text("No profile found for this user", 404);
 	}
 
-	kv.put(`profiles/${id}`, JSON.stringify(records[0]));
+	kvCacheWithTtl("profile", kv, `profile/${id}`, records[0]);
 	return c.text("Profile updated successfully");
 });
 
