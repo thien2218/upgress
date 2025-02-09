@@ -3,7 +3,7 @@ import { resourcesTable } from "@/db";
 import { auth, valibot } from "@/middlewares";
 import { CreateResourceSchema, UpdateResourceSchema } from "@/schemas/resource";
 import { Resource } from "@/types";
-import { kvCacheWithTtl } from "@/utils/cache";
+import { kvCacheWithTtl, kvGetWithTtl } from "@/utils/cache";
 import { handleDbError } from "@/utils/db";
 import { and, eq, sql } from "drizzle-orm";
 import { Hono } from "hono";
@@ -40,7 +40,7 @@ resourceRoutes.get("/", async (c) => {
 	const db = c.get("db");
 	const kv = c.env.KV_CACHE;
 
-	const cached = await kv.get(`${userId}/resources`);
+	const cached = await kvGetWithTtl("resource", kv, `${userId}/resources`);
 	let resources: Resource[];
 
 	if (cached) {
@@ -68,7 +68,7 @@ resourceRoutes.get("/:id", async (c) => {
 	const db = c.get("db");
 	const kv = c.env.KV_CACHE;
 
-	const cached = await kv.get(`resource/${id}`);
+	const cached = await kvGetWithTtl("resource", kv, `resource/${id}`);
 	let resource: Resource;
 
 	if (cached) {

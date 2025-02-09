@@ -16,8 +16,9 @@ import { Context } from "hono";
 import { deleteCookie, setCookie } from "hono/cookie";
 import { handleDbError } from "./db";
 import { XataHttpDatabase } from "drizzle-orm/xata-http";
+import { kvGetWithTtl } from "./cache";
 
-const EXPIRY = 1000 * 60 * 60 * 24 * 30; // 30 days
+const EXPIRY = 1000 * 60 * 60 * 24 * 15; // 15 days
 const REFRESH_THRESH = EXPIRY / 2;
 const BASE_SESSION_OPTS = {
 	httpOnly: true,
@@ -64,10 +65,10 @@ export async function validateSessionToken(
 
 	let storedSession: StoredSessionData;
 	let shouldWriteCache = false;
-	const storedSessionStr = await kv.get(`session/${sessionId}`);
+	const cached = await kvGetWithTtl("session", kv, `session/${sessionId}`);
 
-	if (storedSessionStr) {
-		storedSession = JSON.parse(storedSessionStr);
+	if (cached) {
+		storedSession = JSON.parse(cached);
 	} else {
 		const records = await db
 			.select({

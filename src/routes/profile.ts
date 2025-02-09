@@ -3,7 +3,7 @@ import { profilesTable } from "@/db";
 import { auth, valibot } from "@/middlewares";
 import { UpdateProfileSchema } from "@/schemas/profile";
 import { Profile } from "@/types";
-import { kvCacheWithTtl } from "@/utils/cache";
+import { kvCacheWithTtl, kvGetWithTtl } from "@/utils/cache";
 import { handleDbError } from "@/utils/db";
 import { eq } from "drizzle-orm";
 import { Hono } from "hono";
@@ -24,7 +24,7 @@ profileRoutes.get("/me", async (c) => {
 	const db = c.get("db");
 	const kv = c.env.KV_CACHE;
 
-	const cached = await kv.get(`profile/${user.id}`);
+	const cached = await kvGetWithTtl("profile", kv, `profile/${user.id}`);
 	let profile: Profile;
 
 	if (cached) {
