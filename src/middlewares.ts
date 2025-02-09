@@ -112,7 +112,12 @@ export const session: MiddlewareHandler<AppEnv> = async (c, next) => {
 		return next();
 	}
 
-	const { user, session } = await validateSessionToken(c.get("db"), token);
+	const { user, session } = await validateSessionToken(
+		c.get("db"),
+		c.env.KV_CACHE,
+		token
+	);
+
 	c.set("user", user);
 	c.set("session", session);
 

@@ -16,7 +16,7 @@ export interface AppEnv extends Env {
 	};
 	Bindings: {
 		// IMAGES_BUCKET: R2Bucket;
-		// KV_PROFILES: KVNamespace;
+		KV_CACHE: KVNamespace;
 		DB_URL: string;
 		ENVIRONMENT: "development" | "production";
 		XATA_BRANCH: "development" | "main";

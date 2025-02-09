@@ -1,4 +1,4 @@
-import { Session, SessionValidation } from "@/types";
+import { Session, SessionValidation, User } from "@/types";
 import { eq } from "drizzle-orm";
 import {
 	encodeBase32LowerCaseNoPadding,
@@ -10,6 +10,8 @@ import { Context } from "hono";
 import { deleteCookie, setCookie } from "hono/cookie";
 import { handleDbError } from "./db";
 import { XataHttpDatabase } from "drizzle-orm/xata-http";
+
+type StoredSessionData = { user: User; expiresAt: Date };
 
 const EXPIRY = 1000 * 60 * 60 * 24 * 30; // 30 days
 const REFRESH_THRESH = EXPIRY / 2;
@@ -23,7 +25,8 @@ export const SESSION_COOKIE_NAME = "upgress_session";
 
 export async function createSession(
 	db: XataHttpDatabase,
-	userId: string
+	kv: KVNamespace,
+	user: User
 ): Promise<{ token: string; session: Session }> {
 	const bytes = new Uint8Array(20);
 	crypto.getRandomValues(bytes);
@@ -32,70 +35,92 @@ export async function createSession(
 	const sessionId = encodeHexLowerCase(
 		sha256(new TextEncoder().encode(token))
 	);
+	const expiresAt = new Date(Date.now() + EXPIRY);
 
 	const session: Session & { userId: string } = {
 		id: sessionId,
-		userId,
-		expiresAt: new Date(Date.now() + EXPIRY),
+		userId: user.id,
+		expiresAt,
 	};
 
+	await kv.put(`session/${sessionId}`, JSON.stringify({ user, expiresAt }));
 	await db.insert(sessionsTable).values(session).catch(handleDbError);
+
 	return { token, session };
 }
 
 export async function validateSessionToken(
 	db: XataHttpDatabase,
+	kv: KVNamespace,
 	token: string
 ): Promise<SessionValidation> {
 	const sessionId = encodeHexLowerCase(
 		sha256(new TextEncoder().encode(token))
 	);
 
-	const result = await db
-		.select({
-			user: {
-				id: usersTable.id,
-				email: usersTable.email,
-				emailVerified: usersTable.emailVerified,
-				onboarded: usersTable.onboarded,
-			},
-			expiresAt: sessionsTable.expiresAt,
-		})
-		.from(sessionsTable)
-		.innerJoin(usersTable, eq(sessionsTable.userId, usersTable.id))
-		.where(eq(sessionsTable.id, sessionId))
-		.catch(handleDbError);
+	let storedSession: StoredSessionData;
+	let shouldWriteCache: boolean = false;
+	const storedSessionStr = await kv.get(`session/${sessionId}`);
 
-	if (result.length === 0) {
-		return { session: null, user: null };
-	}
-
-	let { user, expiresAt } = result[0];
-
-	if (Date.now() >= expiresAt.getTime()) {
-		await db
-			.delete(sessionsTable)
+	if (storedSessionStr) {
+		storedSession = JSON.parse(storedSessionStr);
+	} else {
+		const records = await db
+			.select({
+				user: {
+					id: usersTable.id,
+					email: usersTable.email,
+					emailVerified: usersTable.emailVerified,
+					onboarded: usersTable.onboarded,
+				},
+				expiresAt: sessionsTable.expiresAt,
+			})
+			.from(sessionsTable)
+			.innerJoin(usersTable, eq(sessionsTable.userId, usersTable.id))
 			.where(eq(sessionsTable.id, sessionId))
 			.catch(handleDbError);
+
+		if (records.length === 0) {
+			return { session: null, user: null };
+		}
+
+		shouldWriteCache = true;
+		storedSession = records[0];
+	}
+
+	let result: SessionValidation = {
+		session: { id: sessionId, expiresAt: storedSession.expiresAt },
+		user: storedSession.user,
+	};
+
+	if (Date.now() >= result.session.expiresAt.getTime()) {
+		invalidateSession(db, kv, sessionId);
 		return { session: null, user: null };
 	}
 
-	if (Date.now() >= expiresAt.getTime() - REFRESH_THRESH) {
-		expiresAt = new Date(Date.now() + EXPIRY);
+	if (Date.now() >= result.session.expiresAt.getTime() - REFRESH_THRESH) {
+		result.session.expiresAt = new Date(Date.now() + EXPIRY);
+		shouldWriteCache = true;
 		await db
 			.update(sessionsTable)
-			.set({ expiresAt: expiresAt })
+			.set({ expiresAt: result.session.expiresAt })
 			.where(eq(sessionsTable.id, sessionId))
 			.catch(handleDbError);
 	}
 
-	return { session: { id: sessionId, expiresAt }, user };
+	if (shouldWriteCache) {
+		await kv.put(`session/${sessionId}`, JSON.stringify(result));
+	}
+
+	return result;
 }
 
 export async function invalidateSession(
 	db: XataHttpDatabase,
+	kv: KVNamespace,
 	sessionId: string
 ): Promise<void> {
+	await kv.delete(`session/${sessionId}`);
 	await db
 		.delete(sessionsTable)
 		.where(eq(sessionsTable.id, sessionId))

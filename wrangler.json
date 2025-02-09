@@ -6,13 +6,13 @@
 	"compatibility_flags": ["nodejs_compat"],
 	"vars": {
 		"XATA_BRANCH": "main"
-	}
-	// "kv_namespaces": [
-	//   {
-	//     "binding": "MY_KV_NAMESPACE",
-	//     "id": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-	//   }
-	// ],
+	},
+	"kv_namespaces": [
+		{
+			"binding": "KV_CACHE",
+			"id": "1433f32081f240f98fe2033950989608"
+		}
+	]
 	// "r2_buckets": [
 	//   {
 	//     "binding": "MY_BUCKET",
