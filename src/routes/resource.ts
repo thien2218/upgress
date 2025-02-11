@@ -25,13 +25,27 @@ resourceRoutes.post("/", valibot("json", CreateResourceSchema), async (c) => {
 	const { id: userId } = c.get("user");
 	const payload = c.req.valid("json");
 	const db = c.get("db");
+	const kv = c.env.KV_CACHE;
 
-	await db
+	const records = await db
 		.insert(resourcesTable)
 		.values({ id, userId, ...payload })
+		.returning(resourceColumns)
 		.catch(handleDbError);
 
-	kvCacheWithTtl("resource", c.env.KV_CACHE, `resource/${id}`, payload);
+	const resource = records[0];
+	const resources: Resource[] = await kvGetWithTtl(
+		"resource",
+		kv,
+		`${userId}/resource`
+	);
+
+	if (resources) {
+		resources.push(resource);
+		kvCacheWithTtl("resource", kv, `${userId}/resource`, resources);
+	}
+	kvCacheWithTtl("resource", kv, `resource/${id}`, resource);
+
 	return c.text("New resource created successfully");
 });
 
@@ -43,7 +57,7 @@ resourceRoutes.get("/", async (c) => {
 	let resources: Resource[] = await kvGetWithTtl(
 		"resource",
 		kv,
-		`${userId}/resources`
+		`${userId}/resource`
 	);
 
 	if (!resources) {

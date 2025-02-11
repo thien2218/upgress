@@ -12,6 +12,7 @@ import {
 	picklist,
 	pipe,
 	string,
+	transform,
 } from "valibot";
 
 export const CreateTaskSchema = object({
@@ -26,6 +27,8 @@ export const CreateTaskSchema = object({
 		maxValue(5, "Task priority's value cannot be greater than 5")
 	),
 	difficulty: pipe(
+		string(),
+		transform((input) => parseFloat(input)),
 		number(),
 		minValue(1, "Task priority's value cannot be smaller than 1"),
 		maxValue(5, "Task priority's value cannot be greater than 5")
