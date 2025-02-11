@@ -25,7 +25,8 @@ export const kvGetWithTtl = async (
 	}
 
 	const value = await kv.get(key, { cacheTtl: edgeTtlMap[type] });
-	return value;
+	if (!value) return value;
+	return JSON.parse(value);
 };
 
 export const kvCacheWithTtl = async (

@@ -40,12 +40,13 @@ resourceRoutes.get("/", async (c) => {
 	const db = c.get("db");
 	const kv = c.env.KV_CACHE;
 
-	const cached = await kvGetWithTtl("resource", kv, `${userId}/resources`);
-	let resources: Resource[];
+	let resources: Resource[] = await kvGetWithTtl(
+		"resource",
+		kv,
+		`${userId}/resources`
+	);
 
-	if (cached) {
-		resources = JSON.parse(cached);
-	} else {
+	if (!resources) {
 		resources = await db
 			.select(resourceColumns)
 			.from(resourcesTable)
@@ -68,12 +69,13 @@ resourceRoutes.get("/:id", async (c) => {
 	const db = c.get("db");
 	const kv = c.env.KV_CACHE;
 
-	const cached = await kvGetWithTtl("resource", kv, `resource/${id}`);
-	let resource: Resource;
+	let resource: Resource = await kvGetWithTtl(
+		"resource",
+		kv,
+		`resource/${id}`
+	);
 
-	if (cached) {
-		resource = JSON.parse(cached);
-	} else {
+	if (!resource) {
 		const records = await db
 			.select(resourceColumns)
 			.from(resourcesTable)

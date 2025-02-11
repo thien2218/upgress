@@ -24,12 +24,13 @@ profileRoutes.get("/me", async (c) => {
 	const db = c.get("db");
 	const kv = c.env.KV_CACHE;
 
-	const cached = await kvGetWithTtl("profile", kv, `profile/${user.id}`);
-	let profile: Profile;
+	let profile: Profile = await kvGetWithTtl(
+		"profile",
+		kv,
+		`profile/${user.id}`
+	);
 
-	if (cached) {
-		profile = JSON.parse(cached);
-	} else {
+	if (!profile) {
 		const records = await db
 			.select(profileColumns)
 			.from(profilesTable)
@@ -42,6 +43,8 @@ profileRoutes.get("/me", async (c) => {
 
 		profile = records[0];
 		kvCacheWithTtl("profile", kv, `profile/${user.id}`, profile);
+	} else {
+		profile.joinedSince = new Date(profile.joinedSince);
 	}
 
 	return c.json({ ...user, ...profile });
@@ -51,7 +54,6 @@ profileRoutes.patch("/", valibot("json", UpdateProfileSchema), async (c) => {
 	const { id } = c.get("user");
 	const payload = c.req.valid("json");
 	const db = c.get("db");
-	const kv = c.env.KV_CACHE;
 
 	const records = await db
 		.update(profilesTable)
@@ -64,7 +66,7 @@ profileRoutes.patch("/", valibot("json", UpdateProfileSchema), async (c) => {
 		return c.text("No profile found for this user", 404);
 	}
 
-	kvCacheWithTtl("profile", kv, `profile/${id}`, records[0]);
+	kvCacheWithTtl("profile", c.env.KV_CACHE, `profile/${id}`, records[0]);
 	return c.text("Profile updated successfully");
 });
 

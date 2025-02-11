@@ -1,10 +1,4 @@
-import {
-	Auth,
-	Session,
-	SessionValidation,
-	StoredSessionData,
-	User,
-} from "@/types";
+import { Session, SessionValidation, StoredSessionData, User } from "@/types";
 import { eq } from "drizzle-orm";
 import {
 	encodeBase32LowerCaseNoPadding,
@@ -63,12 +57,15 @@ export async function validateSessionToken(
 		sha256(new TextEncoder().encode(token))
 	);
 
-	let storedSession: StoredSessionData;
 	let shouldWriteCache = false;
-	const cached = await kvGetWithTtl("session", kv, `session/${sessionId}`);
+	let storedSession: StoredSessionData = await kvGetWithTtl(
+		"session",
+		kv,
+		`session/${sessionId}`
+	);
 
-	if (cached) {
-		storedSession = JSON.parse(cached);
+	if (storedSession) {
+		storedSession.expiresAt = new Date(storedSession.expiresAt);
 	} else {
 		const records = await db
 			.select({
@@ -93,31 +90,29 @@ export async function validateSessionToken(
 		storedSession = records[0];
 	}
 
-	let result: Auth = {
-		session: { id: sessionId, expiresAt: storedSession.expiresAt },
-		user: storedSession.user,
-	};
-
-	if (Date.now() >= result.session.expiresAt.getTime()) {
+	if (Date.now() > storedSession.expiresAt.getTime()) {
 		invalidateSession(db, kv, sessionId);
 		return { session: null, user: null };
 	}
 
-	if (Date.now() >= result.session.expiresAt.getTime() - REFRESH_THRESH) {
-		result.session.expiresAt = new Date(Date.now() + EXPIRY);
+	if (Date.now() > storedSession.expiresAt.getTime() - REFRESH_THRESH) {
+		storedSession.expiresAt = new Date(Date.now() + EXPIRY);
 		shouldWriteCache = true;
 		await db
 			.update(sessionsTable)
-			.set({ expiresAt: result.session.expiresAt })
+			.set({ expiresAt: storedSession.expiresAt })
 			.where(eq(sessionsTable.id, sessionId))
 			.catch(handleDbError);
 	}
 
 	if (shouldWriteCache) {
-		kv.put(`session/${sessionId}`, JSON.stringify(result));
+		kv.put(`session/${sessionId}`, JSON.stringify(storedSession));
 	}
 
-	return result;
+	return {
+		session: { id: sessionId, expiresAt: storedSession.expiresAt },
+		user: storedSession.user,
+	};
 }
 
 export async function invalidateSession(
