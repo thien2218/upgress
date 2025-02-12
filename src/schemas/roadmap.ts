@@ -11,7 +11,6 @@ import {
 	partial,
 	pipe,
 	string,
-	transform,
 } from "valibot";
 
 export const CreateRoadmapSchema = object({
@@ -21,12 +20,7 @@ export const CreateRoadmapSchema = object({
 		maxLength(100, "Roadmap name cannot exceed 100 characters")
 	),
 	budget: optional(
-		pipe(
-			string(),
-			transform((input) => parseFloat(input)),
-			number(),
-			minValue(0, "Roadmap budget cannot be lower than 0")
-		)
+		pipe(number(), minValue(0, "Roadmap budget cannot be lower than 0"))
 	),
 	commitment: string(),
 	goal: pipe(

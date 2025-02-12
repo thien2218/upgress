@@ -10,7 +10,6 @@ import {
 	pipe,
 	startsWith,
 	string,
-	transform,
 	url,
 } from "valibot";
 
@@ -33,14 +32,7 @@ export const CreateResourceSchema = object({
 		url("Resource reference link must be a valid URL"),
 		startsWith("https://", "Resource reference link must be secure")
 	),
-	cost: optional(
-		pipe(
-			string(),
-			transform((input) => parseFloat(input)),
-			number(),
-			minValue(0, "Cost cannot be lower than 0")
-		)
-	),
+	cost: optional(pipe(number(), minValue(0, "Cost cannot be lower than 0"))),
 });
 
 export const UpdateResourceSchema = pipe(

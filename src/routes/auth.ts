@@ -90,15 +90,18 @@ authRoutes.post("/onboard", valibot("json", OnboardSchema), async (c) => {
 	const records = await db
 		.insert(profilesTable)
 		.values({ userId: user.id, ...payload })
-		.returning({ joinedSince: profilesTable.joinedSince })
+		.returning({
+			firstName: profilesTable.firstName,
+			lastName: profilesTable.lastName,
+			profileImage: profilesTable.profileImage,
+			bio: profilesTable.bio,
+			joinedSince: profilesTable.joinedSince,
+		})
 		.catch(handleDbError);
 
 	await db.update(usersTable).set({ onboarded: true }).catch(handleDbError);
 
-	kvCacheWithTtl("profile", kv, `profile/${user.id}`, {
-		...payload,
-		...records[0],
-	});
+	kvCacheWithTtl("profile", kv, `profile/${user.id}`, records[0]);
 	kvCacheWithTtl("session", kv, `session/${session.id}`, {
 		user: { ...user, onboarded: true },
 		expiresAt: session.expiresAt,

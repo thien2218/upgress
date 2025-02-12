@@ -34,44 +34,23 @@ resourceRoutes.post("/", valibot("json", CreateResourceSchema), async (c) => {
 		.catch(handleDbError);
 
 	const resource = records[0];
-	const resources: Resource[] = await kvGetWithTtl(
-		"resource",
-		kv,
-		`${userId}/resource`
-	);
 
-	if (resources) {
-		resources.push(resource);
-		kvCacheWithTtl("resource", kv, `${userId}/resource`, resources);
-	}
 	kvCacheWithTtl("resource", kv, `resource/${id}`, resource);
-
 	return c.text("New resource created successfully");
 });
 
 resourceRoutes.get("/", async (c) => {
 	const { id: userId } = c.get("user");
 	const db = c.get("db");
-	const kv = c.env.KV_CACHE;
 
-	let resources: Resource[] = await kvGetWithTtl(
-		"resource",
-		kv,
-		`${userId}/resource`
-	);
+	const resources = await db
+		.select(resourceColumns)
+		.from(resourcesTable)
+		.where(eq(resourcesTable.userId, userId))
+		.catch(handleDbError);
 
-	if (!resources) {
-		resources = await db
-			.select(resourceColumns)
-			.from(resourcesTable)
-			.where(eq(resourcesTable.userId, userId))
-			.catch(handleDbError);
-
-		if (!resources.length) {
-			return c.text("No resources found", 404);
-		}
-
-		kvCacheWithTtl("resource", kv, `${userId}/resource`, resources);
+	if (!resources.length) {
+		return c.text("No resources found", 404);
 	}
 
 	return c.json(resources);

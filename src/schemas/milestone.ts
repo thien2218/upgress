@@ -13,7 +13,6 @@ import {
 	partial,
 	pipe,
 	string,
-	transform,
 } from "valibot";
 
 export const CreateMilestoneSchema = object({
@@ -56,8 +55,6 @@ export const ReorderMilestoneSchema = pipe(
 			nonEmpty("List of milestone to reorder cannot be empty")
 		),
 		minOrder: pipe(
-			string(),
-			transform((input) => parseFloat(input)),
 			number(),
 			integer("Minimum order number must be an integer")
 		),
