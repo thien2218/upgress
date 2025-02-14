@@ -3,13 +3,16 @@ import {
 	boolean,
 	date,
 	foreignKey,
+	integer,
+	jsonb,
 	pgEnum,
 	pgTable,
-	primaryKey,
 	real,
+	serial,
 	smallint,
 	text,
 	timestamp,
+	unique,
 	varchar,
 } from "drizzle-orm/pg-core";
 
@@ -55,8 +58,8 @@ export const roadmapsTable = pgTable(
 		),
 		name: varchar("name", { length: 100 }).notNull(),
 		budget: real("budget").default(0).notNull(),
-		commitment: text("commitment").notNull(),
-		goal: text("goal").notNull(),
+		commitment: smallint("commitment").notNull(),
+		goals: jsonb("goals").$type<string[]>().notNull(),
 		prerequisite: varchar("prerequisite", { length: 25 }),
 		createdAt: timestamp("created_at", { withTimezone: true, mode: "date" })
 			.default(sql`now()`)
@@ -87,19 +90,16 @@ export const milestonesTable = pgTable("milestones", {
 export const roadmapToMilestone = pgTable(
 	"roadmap_to_milestone",
 	{
+		id: serial("id").primaryKey(),
 		roadmapId: varchar("roadmap_id", { length: 25 })
 			.notNull()
 			.references(() => roadmapsTable.id, { onDelete: "cascade" }),
 		milestoneId: varchar("milestone_id", { length: 25 })
 			.notNull()
 			.references(() => milestonesTable.id, { onDelete: "cascade" }),
-		order: smallint("order").notNull(),
 	},
 	(table) => [
-		primaryKey({
-			name: "roadmap_milestone_key",
-			columns: [table.roadmapId, table.milestoneId, table.order],
-		}),
+		unique("unique_roadmap_milestone").on(table.roadmapId, table.milestoneId),
 	]
 );
 
@@ -120,7 +120,7 @@ export const tasksTable = pgTable("tasks", {
 	description: text("description").notNull(),
 	priority: smallint("priority").notNull(),
 	status: statusEnum().default("pending").notNull(),
-	difficulty: smallint("difficulty").notNull(),
+	timeSpent: integer("time_spent").default(0).notNull(),
 	dueDate: date("due_date", { mode: "date" }),
 	createdAt: timestamp("created_at", { withTimezone: true, mode: "date" })
 		.default(sql`now()`)
@@ -142,6 +142,7 @@ export const resourcesTable = pgTable("resources", {
 export const resourceToMilestone = pgTable(
 	"resource_to_milestone",
 	{
+		id: serial("id").primaryKey(),
 		resourceId: varchar("resource_id", { length: 25 })
 			.notNull()
 			.references(() => resourcesTable.id, { onDelete: "cascade" }),
@@ -153,9 +154,9 @@ export const resourceToMilestone = pgTable(
 			.notNull(),
 	},
 	(table) => [
-		primaryKey({
-			name: "resource_milestone_key",
-			columns: [table.resourceId, table.milestoneId],
-		}),
+		unique("unique_milestone_resource").on(
+			table.resourceId,
+			table.milestoneId
+		),
 	]
 );

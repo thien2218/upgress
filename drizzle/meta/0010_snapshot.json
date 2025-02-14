@@ -1,6 +1,6 @@
 {
-  "id": "3c7b0070-1190-4557-a1fb-d1fbcc46a60d",
-  "prevId": "6cf7a829-37f0-43be-80a4-90f9e6b55caf",
+  "id": "25bdba45-cfdc-4772-9474-1c5eae253c85",
+  "prevId": "6c10b089-04a3-4ee8-b4ef-ff865723edd3",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -13,6 +13,12 @@
           "type": "varchar(25)",
           "primaryKey": true,
           "notNull": true
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "varchar(25)",
+          "primaryKey": false,
+          "notNull": false
         },
         "target": {
           "name": "target",
@@ -31,10 +37,31 @@
           "type": "text",
           "primaryKey": false,
           "notNull": false
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
         }
       },
       "indexes": {},
-      "foreignKeys": {},
+      "foreignKeys": {
+        "milestones_user_id_users_id_fk": {
+          "name": "milestones_user_id_users_id_fk",
+          "tableFrom": "milestones",
+          "tableTo": "users",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "policies": {},
@@ -100,66 +127,6 @@
         }
       },
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
-    "public.resource_to_milestone": {
-      "name": "resource_to_milestone",
-      "schema": "",
-      "columns": {
-        "resource_id": {
-          "name": "resource_id",
-          "type": "varchar(25)",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "milestone_id": {
-          "name": "milestone_id",
-          "type": "varchar(25)",
-          "primaryKey": false,
-          "notNull": true
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {
-        "resource_to_milestone_resource_id_resources_id_fk": {
-          "name": "resource_to_milestone_resource_id_resources_id_fk",
-          "tableFrom": "resource_to_milestone",
-          "tableTo": "resources",
-          "columnsFrom": [
-            "resource_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
-        "resource_to_milestone_milestone_id_milestones_id_fk": {
-          "name": "resource_to_milestone_milestone_id_milestones_id_fk",
-          "tableFrom": "resource_to_milestone",
-          "tableTo": "milestones",
-          "columnsFrom": [
-            "milestone_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {
-        "resource_milestone_key": {
-          "name": "resource_milestone_key",
-          "columns": [
-            "resource_id",
-            "milestone_id"
-          ]
-        }
-      },
       "uniqueConstraints": {},
       "policies": {},
       "checkConstraints": {},
@@ -235,73 +202,6 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.roadmap_to_milestone": {
-      "name": "roadmap_to_milestone",
-      "schema": "",
-      "columns": {
-        "roadmap_id": {
-          "name": "roadmap_id",
-          "type": "varchar(25)",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "milestone_id": {
-          "name": "milestone_id",
-          "type": "varchar(25)",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "order": {
-          "name": "order",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {
-        "roadmap_to_milestone_roadmap_id_roadmaps_id_fk": {
-          "name": "roadmap_to_milestone_roadmap_id_roadmaps_id_fk",
-          "tableFrom": "roadmap_to_milestone",
-          "tableTo": "roadmaps",
-          "columnsFrom": [
-            "roadmap_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
-        "roadmap_to_milestone_milestone_id_milestones_id_fk": {
-          "name": "roadmap_to_milestone_milestone_id_milestones_id_fk",
-          "tableFrom": "roadmap_to_milestone",
-          "tableTo": "milestones",
-          "columnsFrom": [
-            "milestone_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {
-        "roadmap_milestone_key": {
-          "name": "roadmap_milestone_key",
-          "columns": [
-            "roadmap_id",
-            "milestone_id",
-            "order"
-          ]
-        }
-      },
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
     "public.roadmaps": {
       "name": "roadmaps",
       "schema": "",
@@ -333,21 +233,28 @@
         },
         "commitment": {
           "name": "commitment",
-          "type": "text",
+          "type": "smallint",
           "primaryKey": false,
           "notNull": true
         },
-        "goal": {
-          "name": "goal",
-          "type": "text",
+        "goals": {
+          "name": "goals",
+          "type": "jsonb",
           "primaryKey": false,
-          "notNull": false
+          "notNull": true
         },
         "prerequisite": {
           "name": "prerequisite",
           "type": "varchar(25)",
           "primaryKey": false,
           "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
         }
       },
       "indexes": {},
@@ -440,6 +347,12 @@
           "primaryKey": true,
           "notNull": true
         },
+        "user_id": {
+          "name": "user_id",
+          "type": "varchar(25)",
+          "primaryKey": false,
+          "notNull": false
+        },
         "milestone_id": {
           "name": "milestone_id",
           "type": "varchar(25)",
@@ -466,21 +379,42 @@
           "notNull": true,
           "default": "'pending'"
         },
-        "difficulty": {
-          "name": "difficulty",
-          "type": "smallint",
+        "time_spent": {
+          "name": "time_spent",
+          "type": "integer",
           "primaryKey": false,
-          "notNull": true
+          "notNull": true,
+          "default": 0
         },
         "due_date": {
           "name": "due_date",
           "type": "date",
           "primaryKey": false,
           "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
         }
       },
       "indexes": {},
       "foreignKeys": {
+        "tasks_user_id_users_id_fk": {
+          "name": "tasks_user_id_users_id_fk",
+          "tableFrom": "tasks",
+          "tableTo": "users",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
         "tasks_milestone_id_milestones_id_fk": {
           "name": "tasks_milestone_id_milestones_id_fk",
           "tableFrom": "tasks",

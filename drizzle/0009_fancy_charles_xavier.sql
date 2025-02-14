@@ -1,0 +1,1 @@
+ALTER TABLE "roadmaps" ALTER COLUMN "commitment" TYPE smallint USING "commitment"::smallint;

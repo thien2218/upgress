@@ -1,7 +1,10 @@
 import {
+	array,
 	check,
+	integer,
 	length,
 	maxLength,
+	maxValue,
 	minValue,
 	nanoid,
 	nonEmpty,
@@ -22,16 +25,32 @@ export const CreateRoadmapSchema = object({
 	budget: optional(
 		pipe(number(), minValue(0, "Roadmap budget cannot be lower than 0"))
 	),
-	commitment: string(),
-	goal: pipe(
-		string(),
-		nonEmpty("Roadmap goal cannot be empty"),
-		maxLength(500, "Roadmap goal cannot exceed 500 characters")
+	commitment: pipe(
+		number(),
+		integer("Number of hours committed per week must be an integer"),
+		minValue(1, "Number of hours committed per week cannot be less than 1"),
+		maxValue(
+			100,
+			"Number of hours committed per week cannot be greater than 100"
+		)
 	),
-	prerequisite: pipe(
-		string(),
-		length(25, "Invalid roadmap prerequisite id"),
-		nanoid("Invalid roadmap prerequisite id")
+	goals: pipe(
+		array(
+			pipe(
+				string(),
+				nonEmpty("Goal must be specified"),
+				maxLength(250, "Goal cannot have more than 250 characters")
+			)
+		),
+		nonEmpty("There must be at least one goal for the roadmap"),
+		maxLength(50, "There shouldn't be too many goals for one roadmap")
+	),
+	prerequisite: optional(
+		pipe(
+			string(),
+			length(25, "Invalid roadmap prerequisite id"),
+			nanoid("Invalid roadmap prerequisite id")
+		)
 	),
 });
 

@@ -25,9 +25,9 @@ roadmapRoutes.post(
 		const payload = c.req.valid("json");
 		const db = c.get("db");
 
-		const sq = db.$with("select_max_order").as(
+		const sq = db.$with("select_valid_roadmap_id").as(
 			db
-				.select({ value: sql`${max(roadmapToMilestone.order)} + 1` })
+				.select({ roadmapId: roadmapsTable.id })
 				.from(roadmapToMilestone)
 				.innerJoin(
 					roadmapsTable,
@@ -38,8 +38,8 @@ roadmapRoutes.post(
 		const records = await db
 			.with(sq)
 			.insert(roadmapToMilestone)
-			.values({ roadmapId: id, milestoneId, order: sq.value })
-			.returning({ order: sq.value })
+			.values({ roadmapId: sql`${sq.roadmapId}`, milestoneId })
+			.returning({ value: sql`1` })
 			.catch(handleDbError);
 
 		if (!records.length) {
@@ -81,7 +81,7 @@ roadmapRoutes.get("/", async (c) => {
 			name: roadmapsTable.name,
 			budget: roadmapsTable.budget,
 			commitment: roadmapsTable.commitment,
-			goal: roadmapsTable.goal,
+			goals: roadmapsTable.goals,
 			prerequisite: roadmapsTable.prerequisite,
 		})
 		.from(roadmapsTable)
@@ -105,7 +105,7 @@ roadmapRoutes.get("/:id", async (c) => {
 			name: roadmapsTable.name,
 			budget: roadmapsTable.budget,
 			commitment: roadmapsTable.commitment,
-			goal: roadmapsTable.goal,
+			goals: roadmapsTable.goals,
 			prerequisite: roadmapsTable.prerequisite,
 			milestone: {
 				id: milestonesTable.id,
@@ -134,59 +134,6 @@ roadmapRoutes.get("/:id", async (c) => {
 
 	return c.json({ ...roadmap, milestones });
 });
-
-roadmapRoutes.put(
-	"/:id/milestone",
-	valibot("json", ReorderMilestoneSchema),
-	async (c) => {
-		const id = c.req.param("id");
-		const { id: userId } = c.get("user");
-		const { minOrder, milestoneIds } = c.req.valid("json");
-		const db = c.get("db");
-
-		const ids = await db
-			.select({ value: sql`1` })
-			.from(roadmapToMilestone)
-			.innerJoin(
-				roadmapsTable,
-				eq(roadmapToMilestone.roadmapId, roadmapsTable.id)
-			)
-			.where(
-				and(
-					eq(roadmapsTable.id, id),
-					eq(roadmapsTable.userId, userId),
-					inArray(roadmapToMilestone.milestoneId, milestoneIds)
-				)
-			)
-			.catch(handleDbError);
-
-		if (ids.length !== milestoneIds.length) {
-			return c.text(
-				"Provided list of milestone ids does not match with the ones in the database"
-			);
-		}
-
-		const caseExpression = sql`
-         CASE ${sql.join(
-				milestoneIds.map(
-					(id, index) =>
-						sql`WHEN ${roadmapToMilestone.roadmapId} = ${id} THEN ${
-							minOrder + index
-						}`
-				),
-				" "
-			)} END
-      `;
-
-		await db
-			.update(roadmapToMilestone)
-			.set({ order: caseExpression })
-			.where(inArray(roadmapToMilestone.milestoneId, milestoneIds))
-			.catch(handleDbError);
-
-		return c.text("Milestone reordered successfully");
-	}
-);
 
 roadmapRoutes.patch("/:id", valibot("json", UpdateRoadmapSchema), async (c) => {
 	const id = c.req.param("id");

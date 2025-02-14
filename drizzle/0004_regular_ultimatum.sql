@@ -1,1 +1,0 @@
-ALTER TABLE "users" ALTER COLUMN "encrypted_pwd" SET DATA TYPE varchar(60);

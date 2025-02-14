@@ -13,6 +13,7 @@ import {
 	picklist,
 	pipe,
 	string,
+	transform,
 } from "valibot";
 
 export const CreateTaskSchema = object({
@@ -27,13 +28,13 @@ export const CreateTaskSchema = object({
 		minValue(1, "Task priority's value cannot be smaller than 1"),
 		maxValue(5, "Task priority's value cannot be greater than 5")
 	),
-	difficulty: pipe(
-		number(),
-		integer("Task difficulty's value must be an integer"),
-		minValue(1, "Task difficulty's value cannot be smaller than 1"),
-		maxValue(5, "Task difficulty's value cannot be greater than 5")
+	dueDate: optional(
+		pipe(
+			string(),
+			transform((v) => new Date(v)),
+			date("Due date must be a valid date")
+		)
 	),
-	dueDate: optional(date()),
 });
 
 export const UpdateTaskSchema = pipe(

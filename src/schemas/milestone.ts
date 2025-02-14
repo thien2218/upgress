@@ -13,6 +13,7 @@ import {
 	partial,
 	pipe,
 	string,
+	transform,
 } from "valibot";
 
 export const CreateMilestoneSchema = object({
@@ -21,14 +22,18 @@ export const CreateMilestoneSchema = object({
 		nonEmpty("Milestone target cannot be empty"),
 		maxLength(100, "Milestone target cannot be longer than 100 characters")
 	),
-	deadline: date(),
+	deadline: pipe(
+		string(),
+		transform((v) => new Date(v)),
+		date()
+	),
 	description: optional(
 		pipe(
 			string(),
 			nonEmpty("Milestone description cannot be empty"),
 			maxLength(
 				500,
-				"Milestone description cannot be longer than 500 characters"
+				"Milestone description should not be longer than 500 characters"
 			)
 		)
 	),

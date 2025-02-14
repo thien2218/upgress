@@ -1,5 +1,5 @@
 import { AuthEnv } from "@/context";
-import { milestonesTable, tasksTable } from "@/db";
+import { milestonesTable, tasksTable, usersTable } from "@/db";
 import { auth, valibot } from "@/middlewares";
 import { UpdateMilestoneSchema } from "@/schemas/milestone";
 import { CreateTaskSchema } from "@/schemas/task";
@@ -26,7 +26,7 @@ milestoneRoutes.get("/:id", async (c) => {
 				description: tasksTable.description,
 				priority: tasksTable.priority,
 				status: tasksTable.status,
-				difficulty: tasksTable.difficulty,
+				timeSpent: tasksTable.timeSpent,
 				dueDate: tasksTable.dueDate,
 			},
 		})
@@ -56,10 +56,36 @@ milestoneRoutes.post(
 		const payload = c.req.valid("json");
 		const db = c.get("db");
 
-		await db
+		const sq = db.$with("select_valid_milestone_id").as(
+			db
+				.select({ milestoneId: milestonesTable.id })
+				.from(milestonesTable)
+				.where(
+					and(
+						eq(milestonesTable.id, milestoneId),
+						eq(milestonesTable.userId, userId)
+					)
+				)
+		);
+
+		const records = await db
+			.with(sq)
 			.insert(tasksTable)
-			.values({ id, milestoneId, userId, ...payload })
+			.values({
+				id,
+				milestoneId: sql`${sq.milestoneId}`,
+				userId,
+				...payload,
+			})
+			.returning({ value: sql`1` })
 			.catch(handleDbError);
+
+		if (!records.length) {
+			return c.text(
+				"No roadmap found from this user with the specified id",
+				404
+			);
+		}
 
 		return c.text("Task successfully added");
 	}
