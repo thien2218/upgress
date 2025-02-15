@@ -1,0 +1,2 @@
+ALTER TABLE "roadmap_to_milestone" DROP CONSTRAINT "unique_roadmap_milestone";--> statement-breakpoint
+ALTER TABLE "roadmap_to_milestone" ADD CONSTRAINT "unique_roadmap_milestone" UNIQUE("roadmap_id","milestone_id","order");

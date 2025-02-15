@@ -1,7 +1,6 @@
 import {
 	array,
 	check,
-	date,
 	integer,
 	length,
 	maxLength,
@@ -13,7 +12,6 @@ import {
 	partial,
 	pipe,
 	string,
-	transform,
 } from "valibot";
 
 export const CreateMilestoneSchema = object({
@@ -22,11 +20,7 @@ export const CreateMilestoneSchema = object({
 		nonEmpty("Milestone target cannot be empty"),
 		maxLength(100, "Milestone target cannot be longer than 100 characters")
 	),
-	deadline: pipe(
-		string(),
-		transform((v) => new Date(v)),
-		date()
-	),
+	estTime: pipe(number(), integer()),
 	description: optional(
 		pipe(
 			string(),

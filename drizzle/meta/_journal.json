@@ -85,6 +85,20 @@
       "when": 1739567228139,
       "tag": "0011_tidy_bug",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1739635267858,
+      "tag": "0012_mysterious_wolverine",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1739637242578,
+      "tag": "0013_right_sugar_man",
+      "breakpoints": true
     }
   ]
 }

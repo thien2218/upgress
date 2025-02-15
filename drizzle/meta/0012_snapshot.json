@@ -1,6 +1,6 @@
 {
-  "id": "4d81da35-1093-46b5-abf4-565064b646fd",
-  "prevId": "3c7b0070-1190-4557-a1fb-d1fbcc46a60d",
+  "id": "ba75540d-6956-4dbb-b22b-b4bf36c441c9",
+  "prevId": "d194da01-1002-405c-9e9e-ac8533111f14",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -26,9 +26,9 @@
           "primaryKey": false,
           "notNull": true
         },
-        "deadline": {
-          "name": "deadline",
-          "type": "date",
+        "est_time": {
+          "name": "est_time",
+          "type": "smallint",
           "primaryKey": false,
           "notNull": true
         },
@@ -136,6 +136,12 @@
       "name": "resource_to_milestone",
       "schema": "",
       "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
         "resource_id": {
           "name": "resource_id",
           "type": "varchar(25)",
@@ -185,16 +191,17 @@
           "onUpdate": "no action"
         }
       },
-      "compositePrimaryKeys": {
-        "resource_milestone_key": {
-          "name": "resource_milestone_key",
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "unique_milestone_resource": {
+          "name": "unique_milestone_resource",
+          "nullsNotDistinct": false,
           "columns": [
             "resource_id",
             "milestone_id"
           ]
         }
       },
-      "uniqueConstraints": {},
       "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false
@@ -273,6 +280,12 @@
       "name": "roadmap_to_milestone",
       "schema": "",
       "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
         "roadmap_id": {
           "name": "roadmap_id",
           "type": "varchar(25)",
@@ -321,17 +334,17 @@
           "onUpdate": "no action"
         }
       },
-      "compositePrimaryKeys": {
-        "roadmap_milestone_key": {
-          "name": "roadmap_milestone_key",
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "unique_roadmap_milestone": {
+          "name": "unique_roadmap_milestone",
+          "nullsNotDistinct": false,
           "columns": [
             "roadmap_id",
-            "milestone_id",
-            "order"
+            "milestone_id"
           ]
         }
       },
-      "uniqueConstraints": {},
       "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false
@@ -367,19 +380,25 @@
         },
         "commitment": {
           "name": "commitment",
-          "type": "text",
+          "type": "smallint",
           "primaryKey": false,
           "notNull": true
         },
-        "goal": {
-          "name": "goal",
-          "type": "text",
+        "goals": {
+          "name": "goals",
+          "type": "jsonb",
           "primaryKey": false,
           "notNull": true
         },
         "prerequisite": {
           "name": "prerequisite",
           "type": "varchar(25)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "started_on": {
+          "name": "started_on",
+          "type": "date",
           "primaryKey": false,
           "notNull": false
         },
@@ -513,11 +532,12 @@
           "notNull": true,
           "default": "'pending'"
         },
-        "difficulty": {
-          "name": "difficulty",
-          "type": "smallint",
+        "time_spent": {
+          "name": "time_spent",
+          "type": "integer",
           "primaryKey": false,
-          "notNull": true
+          "notNull": true,
+          "default": 0
         },
         "due_date": {
           "name": "due_date",

@@ -96,7 +96,7 @@ export const db: MiddlewareHandler<AppEnv> = async (c, next) => {
 		branch: c.env.XATA_BRANCH,
 	});
 
-	const db = drizzle(xata);
+	const db = drizzle(xata, { logger: true });
 	c.set("db", db);
 
 	return next();

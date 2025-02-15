@@ -61,6 +61,7 @@ export const roadmapsTable = pgTable(
 		commitment: smallint("commitment").notNull(),
 		goals: jsonb("goals").$type<string[]>().notNull(),
 		prerequisite: varchar("prerequisite", { length: 25 }),
+		startedOn: date("started_on"),
 		createdAt: timestamp("created_at", { withTimezone: true, mode: "date" })
 			.default(sql`now()`)
 			.notNull(),
@@ -80,7 +81,7 @@ export const milestonesTable = pgTable("milestones", {
 		onDelete: "set null",
 	}),
 	target: varchar("target", { length: 100 }).notNull(),
-	deadline: date("deadline", { mode: "date" }).notNull(),
+	estTime: smallint("est_time").notNull(),
 	description: text("description"),
 	updatedAt: timestamp("updated_at", { withTimezone: true, mode: "date" })
 		.default(sql`now()`)
@@ -97,9 +98,14 @@ export const roadmapToMilestone = pgTable(
 		milestoneId: varchar("milestone_id", { length: 25 })
 			.notNull()
 			.references(() => milestonesTable.id, { onDelete: "cascade" }),
+		order: smallint("order").notNull(),
 	},
 	(table) => [
-		unique("unique_roadmap_milestone").on(table.roadmapId, table.milestoneId),
+		unique("unique_roadmap_milestone").on(
+			table.roadmapId,
+			table.milestoneId,
+			table.order
+		),
 	]
 );
 

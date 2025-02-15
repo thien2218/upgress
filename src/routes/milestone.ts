@@ -1,5 +1,5 @@
 import { AuthEnv } from "@/context";
-import { milestonesTable, tasksTable, usersTable } from "@/db";
+import { milestonesTable, tasksTable } from "@/db";
 import { auth, valibot } from "@/middlewares";
 import { UpdateMilestoneSchema } from "@/schemas/milestone";
 import { CreateTaskSchema } from "@/schemas/task";
@@ -102,7 +102,7 @@ milestoneRoutes.patch(
 
 		const records = await db
 			.update(milestonesTable)
-			.set(payload)
+			.set({ ...payload, updatedAt: new Date() })
 			.where(
 				and(eq(milestonesTable.id, id), eq(milestonesTable.userId, userId))
 			)
